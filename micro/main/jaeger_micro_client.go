@@ -34,7 +34,7 @@ func main(){
 		serv := proto.NewHelloService("jaeger.micro.server", service.Client())
 		rsp, err := serv.Hello(ctx, &proto.HelloRequest{Name: t.Format("15:04:05")})
 		if err == nil {
-			fmt.Printf("%v: receive is %s\n", t, rsp.Greeting)
+			fmt.Printf("%v: receive is %s\n", t.Format("2006-01-02 15:04:05"), rsp.Greeting)
 		} else {
 			fmt.Println(err)
 		}
