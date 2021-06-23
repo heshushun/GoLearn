@@ -20,7 +20,7 @@ import (
 )
 
 func Test_Tracer(t *testing.T) {
-	tracer, closer := initJaeger("jaeger-test-demo")
+	tracer, closer := NewJaegerTracer("jaeger-test-demo")
 	defer closer.Close()
 	// 创建 root span
 	span := tracer.StartSpan("span_root")
@@ -50,7 +50,7 @@ func Test_TraceClient(t *testing.T){
 	// 使用拦截器加入tracer，并创建连接
 	resolver := etcd.NewResolver(*serv)
 	robin := grpc.RoundRobin(resolver)
-	tracer, _ := initJaeger(clientName)
+	tracer, _ := NewJaegerTracer(clientName)
 	chainInter := grpc_middleware.ChainUnaryClient(
 		OpenTracingClientInterceptor(tracer),
 	)
@@ -94,7 +94,7 @@ func Test_TraceServer(t *testing.T){
 	}
 
 	// 使用拦截器加入tracer
-	tracer, closer := initJaeger(serverName)
+	tracer, closer := NewJaegerTracer(serverName)
 	defer closer.Close()
 	chainInter := grpc_middleware.ChainUnaryServer(
 		OpentracingServerInterceptor(tracer),

@@ -10,7 +10,9 @@ import (
 	"time"
 )
 
-func initJaeger(service string) (opentracing.Tracer, io.Closer) {
+const JaegerAddr = "127.0.0.1:6831"
+
+func NewJaegerTracer(service string) (opentracing.Tracer, io.Closer) {
 	cfg := &config.Configuration{
 		Sampler:&config.SamplerConfig{
 			Type:     "const",  // 固定采样
@@ -18,7 +20,7 @@ func initJaeger(service string) (opentracing.Tracer, io.Closer) {
 		},
 		Reporter: &config.ReporterConfig{
 			LogSpans:            true,
-			LocalAgentHostPort:  "127.0.0.1:6831",
+			LocalAgentHostPort:  JaegerAddr,
 		},
 		ServiceName: service,
 	}
