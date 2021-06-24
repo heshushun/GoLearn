@@ -53,13 +53,13 @@ func NewHelloService(name string, c client.Client) HelloService {
 }
 
 func (c *helloService) Hello(ctx context.Context, in *HelloRequest, opts ...client.CallOption) (*HelloResponse, error) {
-	req := c.c.NewRequest(c.name, "Hello.Hello", in)
-	out := new(HelloResponse)
-	err := c.c.Call(ctx, req, out, opts...)
+	req := c.c.NewRequest(c.name, "SayHello.Hello", in)
+	resp := new(HelloResponse)
+	err := c.c.Call(ctx, req, resp, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	return resp, nil
 }
 
 // Server API for Hello service
@@ -69,20 +69,6 @@ type HelloHandler interface {
 }
 
 func RegisterHelloHandler(s server.Server, hdlr HelloHandler, opts ...server.HandlerOption) error {
-	type hello interface {
-		Hello(ctx context.Context, in *HelloRequest, out *HelloResponse) error
-	}
-	type Hello struct {
-		hello
-	}
-	h := &helloHandler{hdlr}
-	return s.Handle(s.NewHandler(&Hello{h}, opts...))
+	return s.Handle(s.NewHandler(hdlr, opts...))
 }
 
-type helloHandler struct {
-	HelloHandler
-}
-
-func (h *helloHandler) Hello(ctx context.Context, in *HelloRequest, out *HelloResponse) error {
-	return h.HelloHandler.Hello(ctx, in, out)
-}
