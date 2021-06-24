@@ -2,7 +2,7 @@ package main
 
 import (
 	jaeger_micro "GoLearn/micro"
-	"GoLearn/tracing/proto"
+	"GoLearn/micro/proto"
 	"context"
 	"fmt"
 	"github.com/micro/go-micro/v2"
@@ -13,7 +13,7 @@ import (
 
 
 func main() {
-	_, closer, err := jaeger_micro.NewJaegerTracer("jaeger-micro-client")
+	_, closer, err := jaeger_micro.NewJaegerTracer("jaeger-micro-server")
 	if err != nil {
 		log.Fatal(err)
 	}

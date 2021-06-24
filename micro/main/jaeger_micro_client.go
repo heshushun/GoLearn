@@ -2,7 +2,7 @@ package main
 
 import (
 	jaeger_micro "GoLearn/micro"
-	"GoLearn/tracing/proto"
+	"GoLearn/micro/proto"
 	"context"
 	"fmt"
 	"github.com/micro/go-micro/v2"
@@ -23,7 +23,7 @@ func main(){
 
 	// 创建一个 micro Service
 	service := micro.NewService(
-		micro.Name("test.client"),
+		micro.Name("jaeger.micro.client"),
 		micro.Version("v2"),
 		micro.WrapClient(wrapperTrace.NewClientWrapper(opentracing.GlobalTracer())),
 	)

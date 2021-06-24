@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const JaegerAddr = "127.0.0.1:6831"
+const JaegerAddr = "192.168.1.148:6831"
 
 func NewJaegerTracer(serviceName string) (opentracing.Tracer, io.Closer, error) {
 	cfg := config.Configuration{
@@ -33,6 +33,6 @@ func NewJaegerTracer(serviceName string) (opentracing.Tracer, io.Closer, error) 
 	tracer, closer, err := cfg.NewTracer(
 		config.Reporter(reporter),
 	)
-
+	opentracing.SetGlobalTracer(tracer)
 	return tracer, closer, err
 }

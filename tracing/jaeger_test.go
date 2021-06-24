@@ -39,8 +39,8 @@ var (
 )
 
 const (
-	clientName = "HelloClient"
-	serverName  = "HelloServer"
+	clientName = "jaeger-grpc-client"
+	serverName  = "jaeger-grpc-server"
 )
 
 func Test_TraceClient(t *testing.T){
