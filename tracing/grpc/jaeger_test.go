@@ -1,4 +1,4 @@
-package tracing
+package grpc
 
 import (
 	"GoLearn/etcd"

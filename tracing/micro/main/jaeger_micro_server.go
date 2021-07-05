@@ -1,8 +1,8 @@
 package main
 
 import (
-	jaeger_micro "GoLearn/micro"
-	"GoLearn/micro/proto"
+	jaeger_micro "GoLearn/tracing/micro"
+	"GoLearn/tracing/micro/proto"
 	"context"
 	"fmt"
 	"github.com/micro/go-micro/v2"
