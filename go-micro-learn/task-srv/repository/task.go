@@ -30,6 +30,8 @@ type TaskRepository interface {
 	Finished(ctx context.Context, task *pb.Task) error
 	Count(ctx context.Context, keyword string) (int64, error)
 	Search(ctx context.Context, req *pb.SearchRequest) ([]*pb.Task, error)
+	// 接口新增方法
+	FindById(ctx context.Context, id string) (*pb.Task, error)
 }
 
 // 数据库操作实现类
@@ -50,8 +52,24 @@ func (repo *TaskRepositoryImpl) InsertOne(ctx context.Context, task *pb.Task) er
 		"endTime":    task.EndTime,
 		"isFinished": UnFinished,
 		"createTime": time.Now().Unix(),
+		// 插入新任务时增加userId
+		"userId":     task.UserId,
 	})
 	return err
+}
+
+// 通过ID查询task信息
+func (repo *TaskRepositoryImpl) FindById(ctx context.Context, id string) (*pb.Task, error) {
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, errors.WithMessage(err, "parse ID")
+	}
+	result := repo.collection().FindOne(ctx, bson.M{"_id": objectId})
+	task := &pb.Task{}
+	if err := result.Decode(task); err != nil {
+		return nil, errors.WithMessage(err, "search mongo")
+	}
+	return task, nil
 }
 
 func (repo *TaskRepositoryImpl) Delete(ctx context.Context, id string) error {
@@ -76,6 +94,7 @@ func (repo *TaskRepositoryImpl) Modify(ctx context.Context, task *pb.Task) error
 	}})
 	return err
 }
+
 func (repo *TaskRepositoryImpl) Finished(ctx context.Context, task *pb.Task) error {
 	id, err := primitive.ObjectIDFromHex(task.Id)
 	if err != nil {

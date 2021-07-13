@@ -74,6 +74,8 @@ func insertTask(taskService pb.TaskService, body string, start, end int64) {
 		Body:      body,
 		StartTime: start,
 		EndTime:   end,
+		// 这里先随便输入一个userId
+		UserId: "10000",
 	})
 	if err != nil {
 		log.Fatal("create", err)

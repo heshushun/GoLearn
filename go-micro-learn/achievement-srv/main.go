@@ -4,9 +4,8 @@ import (
 	"context"
 	"github.com/micro/go-micro/v2"
 	"github.com/pkg/errors"
-	"go-micro-learn/task-srv/handler"
-	pb "go-micro-learn/task-srv/proto/task"
-	"go-micro-learn/task-srv/repository"
+	"go-micro-learn/achievement-srv/repository"
+	"go-micro-learn/achievement-srv/subscriber"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
@@ -16,6 +15,7 @@ import (
 // 这里是我内网的mongo地址，请根据你得实际情况配置，推荐使用dockers部署
 const MONGO_URI = "mongodb://192.168.1.96:27018"
 
+// task-srv服务
 func main() {
 	// 在日志中打印文件路径，便于调试代码
 	log.SetFlags(log.Llongfile)
@@ -28,7 +28,7 @@ func main() {
 
 	// New Service
 	service := micro.NewService(
-		micro.Name("go.micro.service.task"),
+		micro.Name("go.micro.service.achievement"),
 		micro.Version("latest"),
 	)
 
@@ -36,15 +36,14 @@ func main() {
 	service.Init()
 
 	// Register Handler
-	taskHandler := &handler.TaskHandler{
-		TaskRepository: &repository.TaskRepositoryImpl{
+	handler := &subscriber.AchievementSub{
+		Repo: &repository.AchievementRepoImpl{
 			Conn: conn,
 		},
-		// 注入消息发送实例,为避免消息名冲突,这里的topic我们用服务名+自定义消息名拼出
-		TaskFinishedPubEvent: micro.NewEvent(handler.TaskFinishedTopic, service.Client()),
 	}
-	if err := pb.RegisterTaskServiceHandler(service.Server(), taskHandler); err != nil {
-		log.Fatal(errors.WithMessage(err, "register server"))
+	// 这里的topic注意与task-srv注册的要一致
+	if err := micro.RegisterSubscriber("go.micro.service.task.finished", service.Server(), handler); err != nil {
+		log.Fatal(errors.WithMessage(err, "subscribe"))
 	}
 
 	// Run service

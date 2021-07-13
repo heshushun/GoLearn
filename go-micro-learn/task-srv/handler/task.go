@@ -2,18 +2,27 @@ package handler
 
 import (
 	"context"
+	"github.com/micro/go-micro/v2"
 	"github.com/pkg/errors"
 	pb "go-micro-learn/task-srv/proto/task"
 	"go-micro-learn/task-srv/repository"
+	"log"
+)
+
+const (
+	// 任务完成消息的topic
+	TaskFinishedTopic = "go.micro.service.task.finished"
 )
 
 // 要实现接口，首先当然要定义一个结构体
 type TaskHandler struct {
 	TaskRepository repository.TaskRepository
+	// 由go-micro封装，用于发送消息的接口，老版本叫micro.Publisher
+	TaskFinishedPubEvent micro.Event
 }
 
 func (t *TaskHandler) Create(ctx context.Context, req *pb.Task, resp *pb.EditResponse) error {
-	if req.Body == "" || req.StartTime <= 0 || req.EndTime <= 0 {
+	if req.Body == "" || req.StartTime <= 0 || req.EndTime <= 0 || req.UserId == "" {
 		return errors.New("bad param")
 	}
 	if err := t.TaskRepository.InsertOne(ctx, req); err != nil {
@@ -22,6 +31,7 @@ func (t *TaskHandler) Create(ctx context.Context, req *pb.Task, resp *pb.EditRes
 	resp.Msg = "success"
 	return nil
 }
+
 func (t *TaskHandler) Delete(ctx context.Context, req *pb.Task, resp *pb.EditResponse) error {
 	if req.Id == "" {
 		return errors.New("bad param")
@@ -32,6 +42,7 @@ func (t *TaskHandler) Delete(ctx context.Context, req *pb.Task, resp *pb.EditRes
 	resp.Msg = req.Id
 	return nil
 }
+
 func (t *TaskHandler) Modify(ctx context.Context, req *pb.Task, resp *pb.EditResponse) error {
 	if req.Id == "" || req.Body == "" || req.StartTime <= 0 || req.EndTime <= 0 {
 		return errors.New("bad param")
@@ -42,6 +53,7 @@ func (t *TaskHandler) Modify(ctx context.Context, req *pb.Task, resp *pb.EditRes
 	resp.Msg = "success"
 	return nil
 }
+
 func (t *TaskHandler) Finished(ctx context.Context, req *pb.Task, resp *pb.EditResponse) error {
 	if req.Id == "" || req.IsFinished != repository.UnFinished && req.IsFinished != repository.Finished {
 		return errors.New("bad param")
@@ -49,9 +61,19 @@ func (t *TaskHandler) Finished(ctx context.Context, req *pb.Task, resp *pb.EditR
 	if err := t.TaskRepository.Finished(ctx, req); err != nil {
 		return err
 	}
+	// 发送task完成消息
+	// 由于以下都是主业务之外的增强功能，出现异常只记录日志，不影响主业务返回
+	if task, err := t.TaskRepository.FindById(ctx, req.Id); err != nil {
+		log.Print("[error]can't send \"task finished\" message. ", err)
+	} else {
+		if err = t.TaskFinishedPubEvent.Publish(ctx, task); err != nil {
+			log.Print("[error]can't send \"task finished\" message. ", err)
+		}
+	}
 	resp.Msg = "success"
 	return nil
 }
+
 func (t *TaskHandler) Search(ctx context.Context, req *pb.SearchRequest, resp *pb.SearchResponse) error {
 	count, err := t.TaskRepository.Count(ctx, req.Keyword)
 	if err != nil {
