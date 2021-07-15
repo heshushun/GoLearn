@@ -42,7 +42,7 @@ func main() {
 		},
 	}
 	// 这里的topic注意与task-srv注册的要一致
-	if err := micro.RegisterSubscriber("go.micro.service.task.finished", service.Server(), handler); err != nil {
+	if err := micro.RegisterSubscriber("go.micro.service.task.finished", service.Server(), handler.Finished); err != nil {
 		log.Fatal(errors.WithMessage(err, "subscribe"))
 	}
 

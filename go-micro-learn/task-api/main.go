@@ -3,6 +3,8 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/micro/go-micro/v2/client"
+	"github.com/micro/go-micro/v2/registry"
+	"github.com/micro/go-micro/v2/registry/etcd"
 	"github.com/micro/go-micro/v2/web"
 	pb "go-micro-learn/task-srv/proto/task"
 	"log"
@@ -15,6 +17,9 @@ func main() {
 		web.Name("go.micro.api.task"),
 		web.Address(":8888"),
 		web.Handler(g),
+		web.Registry(etcd.NewRegistry(
+			registry.Addrs("127.0.0.1:2379"),
+		)),
 	)
 	cli := pb.NewTaskService("go.micro.service.task", client.DefaultClient)
 

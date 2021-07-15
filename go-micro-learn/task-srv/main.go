@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"github.com/micro/go-micro/v2"
+	"github.com/micro/go-micro/v2/registry"
+	"github.com/micro/go-micro/v2/registry/etcd"
 	"github.com/pkg/errors"
 	"go-micro-learn/task-srv/handler"
 	pb "go-micro-learn/task-srv/proto/task"
@@ -30,6 +32,10 @@ func main() {
 	service := micro.NewService(
 		micro.Name("go.micro.service.task"),
 		micro.Version("latest"),
+		// 配置etcd为注册中心，配置etcd路径，默认端口是2379
+		micro.Registry(etcd.NewRegistry(
+			registry.Addrs("127.0.0.1:2379"),
+		)),
 	)
 
 	// Initialise service

@@ -8,5 +8,6 @@ require (
 	github.com/micro/go-micro/v2 v2.9.1
 	github.com/pkg/errors v0.9.1
 	go.mongodb.org/mongo-driver v1.5.4
+	golang.org/dl v0.0.0-20210713194856-38ddc79c2163 // indirect
 	google.golang.org/protobuf v1.23.0
 )
