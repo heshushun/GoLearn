@@ -8,11 +8,12 @@ import (
 	"github.com/micro/go-micro/v2/web"
 	pb "go-micro-learn/task-srv/proto/task"
 	"log"
+	"net/http"
 )
 
 // task-srv服务的restful api映射
 func main() {
-	g := gin.Default()
+	g := InitRouter()
 	service := web.NewService(
 		web.Name("go.micro.api.task"),
 		web.Address(":8888"),
@@ -51,4 +52,15 @@ func main() {
 	if err := service.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func InitRouter()*gin.Engine{
+	ginRouter := gin.Default()
+	ginRouter.POST("/users", func(context *gin.Context) {
+		context.JSON(http.StatusOK,gin.H{
+			"code": 200,
+			"msg": "请求成功",
+		})
+	})
+	return ginRouter
 }
