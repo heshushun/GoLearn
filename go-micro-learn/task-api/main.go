@@ -1,17 +1,16 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/registry"
 	"github.com/micro/go-micro/v2/registry/etcd"
 	"github.com/micro/go-micro/v2/web"
 	"github.com/micro/go-plugins/wrapper/trace/opentracing/v2"
 	"go-micro-learn/common/tracer"
+	"go-micro-learn/task-api/handler"
 	"go-micro-learn/task-api/wrapper/breaker/hystrix"
 	pb "go-micro-learn/task-srv/proto/task"
 	"log"
-	"net/http"
 )
 
 const (
@@ -51,7 +50,7 @@ func main() {
 	taskService := pb.NewTaskService("go.micro.service.task", app.Client())
 
 	// 配置web路由
-	g := InitRouter(taskService)
+	g := handler.Router(taskService)
 	// 这个服务才是真正运行的服务
 	service := web.NewService(
 		web.Name("go.micro.api.task"),
@@ -64,39 +63,4 @@ func main() {
 	if err := service.Run(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func InitRouter(taskService pb.TaskService)*gin.Engine{
-	ginRouter := gin.Default()
-	ginRouter.POST("/users", func(context *gin.Context) {
-		context.JSON(http.StatusOK,gin.H{
-			"code": 200,
-			"msg": "请求成功",
-		})
-	})
-	v1 := ginRouter.Group("/task")
-	{
-		v1.GET("/search", func(c *gin.Context) {
-			req := new(pb.SearchRequest)
-			if err := c.BindQuery(req); err != nil {
-				c.JSON(200, gin.H{
-					"code": "500",
-					"msg":  "bad param",
-				})
-				return
-			}
-			if resp, err := taskService.Search(c, req); err != nil {
-				c.JSON(200, gin.H{
-					"code": "500",
-					"msg":  err.Error(),
-				})
-			} else {
-				c.JSON(200, gin.H{
-					"code": "200",
-					"data": resp,
-				})
-			}
-		})
-	}
-	return ginRouter
 }

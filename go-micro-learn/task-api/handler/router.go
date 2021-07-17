@@ -10,13 +10,22 @@ import (
 
 var service pb.TaskService
 
-func Router(g *gin.Engine, taskService pb.TaskService) {
+func Router(taskService pb.TaskService) *gin.Engine{
 	service = taskService
-	v1 := g.Group("/task")
+	ginRouter := gin.Default()
+	ginRouter.POST("/users", func(context *gin.Context) {
+		context.JSON(http.StatusOK,gin.H{
+			"code": 200,
+			"msg": "请求成功",
+		})
+	})
+	v1 := ginRouter.Group("/task")
 	{
 		v1.GET("/search", Search)
 		v1.POST("/finished", Finished)
 	}
+
+	return ginRouter
 }
 
 func Search(c *gin.Context) {
