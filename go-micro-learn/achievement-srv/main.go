@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"github.com/micro/go-micro/v2"
+	"github.com/micro/go-micro/v2/broker"
+	"github.com/micro/go-micro/v2/broker/nats"
 	"github.com/pkg/errors"
 	"go-micro-learn/achievement-srv/repository"
 	"go-micro-learn/achievement-srv/subscriber"
@@ -30,6 +32,10 @@ func main() {
 	service := micro.NewService(
 		micro.Name("go.micro.service.achievement"),
 		micro.Version("latest"),
+		// 配置nats为消息中间件，默认端口是4222
+		micro.Broker(nats.NewBroker(
+			broker.Addrs("nats://127.0.0.1:4222"),
+		)),
 	)
 
 	// Initialise service

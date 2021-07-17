@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"github.com/micro/go-micro/v2"
+	"github.com/micro/go-micro/v2/broker"
+	"github.com/micro/go-micro/v2/broker/nats"
 	"github.com/micro/go-micro/v2/registry"
 	"github.com/micro/go-micro/v2/registry/etcd"
 	"github.com/pkg/errors"
@@ -35,6 +37,10 @@ func main() {
 		// 配置etcd为注册中心，配置etcd路径，默认端口是2379
 		micro.Registry(etcd.NewRegistry(
 			registry.Addrs("127.0.0.1:2379"),
+		)),
+		// 配置nats为消息中间件，默认端口是4222
+		micro.Broker(nats.NewBroker(
+			broker.Addrs("nats://127.0.0.1:4222"),
 		)),
 	)
 
