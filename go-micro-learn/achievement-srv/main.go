@@ -5,37 +5,53 @@ import (
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/broker"
 	"github.com/micro/go-micro/v2/broker/nats"
+	"github.com/micro/go-plugins/wrapper/trace/opentracing/v2"
 	"github.com/pkg/errors"
 	"go-micro-learn/achievement-srv/repository"
 	"go-micro-learn/achievement-srv/subscriber"
+	"go-micro-learn/common/tracer"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"time"
 )
 
-// 这里是我内网的mongo地址，请根据你得实际情况配置，推荐使用dockers部署
-const MONGO_URI = "mongodb://192.168.1.96:27018"
+
+const (
+	MongoUri = "mongodb://192.168.1.96:27018"
+	ServerName = "go.micro.service.achievement"
+	NatsUri    = "nats://127.0.0.1:4222"
+	JaegerAddr = "127.0.0.1:6831"
+)
 
 // task-srv服务
 func main() {
 	// 在日志中打印文件路径，便于调试代码
 	log.SetFlags(log.Llongfile)
 
-	conn, err := connectMongo(MONGO_URI, time.Second)
+	conn, err := connectMongo(MongoUri, time.Second)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer conn.Disconnect(context.Background())
 
+	// 配置jaeger连接
+	jaegerTracer, closer, err := tracer.NewJaegerTracer(ServerName, JaegerAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer closer.Close()
+
 	// New Service
 	service := micro.NewService(
-		micro.Name("go.micro.service.achievement"),
+		micro.Name(ServerName),
 		micro.Version("latest"),
 		// 配置nats为消息中间件，默认端口是4222
 		micro.Broker(nats.NewBroker(
-			broker.Addrs("nats://127.0.0.1:4222"),
+			broker.Addrs(NatsUri),
 		)),
+		// 配置链路追踪为jaeger
+		micro.WrapSubscriber(opentracing.NewSubscriberWrapper(jaegerTracer)),
 	)
 
 	// Initialise service
