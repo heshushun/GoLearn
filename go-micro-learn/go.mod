@@ -11,7 +11,6 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/favadi/protoc-go-inject-tag v1.1.0 // indirect
 	github.com/gin-gonic/gin v1.6.3
-	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/go-playground/validator/v10 v10.3.0 // indirect
 	github.com/golang/protobuf v1.4.2
 	github.com/grpc-ecosystem/grpc-gateway v1.15.0 // indirect
@@ -32,4 +31,3 @@ require (
 )
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
-
