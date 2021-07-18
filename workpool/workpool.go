@@ -5,14 +5,15 @@ import (
 	"sync"
 )
 
-type TaskFunc func()
+type TaskFunc func(args ...interface{})
 
 type Task struct {
-	f TaskFunc
+	f    TaskFunc
+	args []interface{}
 }
 
 func (t *Task) Execute() {
-	t.f()
+	t.f(t.args...)
 }
 
 type WorkPool struct {
@@ -35,9 +36,10 @@ func (w *WorkPool) PushTask(t *Task) {
 	w.pool <- t
 }
 
-func (w *WorkPool) PushTaskFunc(f TaskFunc) {
+func (w *WorkPool) PushTaskFunc(f TaskFunc, args ...interface{}) {
 	w.pool <- &Task{
-		f: f,
+		f:    f,
+		args: args,
 	}
 }
 

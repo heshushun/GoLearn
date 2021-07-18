@@ -12,10 +12,10 @@ func TestWorkPool_Start(t *testing.T) {
 	lenth := 100
 	wg.Add(lenth)
 	for i := 0; i < lenth; i++ {
-		wp.PushTaskFunc(func() {
+		wp.PushTaskFunc(func(args ...interface{}) {
 			defer wg.Done()
-			fmt.Print(i, " ")
-		})
+			fmt.Print(args[0].(int), " ")
+		}, i)
 	}
 	wg.Wait()
 }
