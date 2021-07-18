@@ -18,7 +18,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/micro/go-micro/v2 v2.9.1
-	github.com/micro/go-plugins/wrapper/trace/opentracing/v2 v2.9.1 // indirect
+	github.com/micro/go-plugins/wrapper/trace/opentracing/v2 v2.9.1
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/prometheus/client_golang v1.11.0 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
