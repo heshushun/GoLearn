@@ -47,11 +47,12 @@ type Pool struct {
 }
 
 // 创建一个协程池
-func NewPool(cap int, poolLen int) *Pool {
+func NewPool(num int, poolLen int) *Pool {
 	p := Pool{
-		workerNum:     cap,
+		workerNum:     num,
 		JobsChannel:   make(chan *Task, poolLen),
 		workerRecover: &WorkerRecover{},
+		wg:            sync.WaitGroup{},
 	}
 	return &p
 }
@@ -68,7 +69,7 @@ func (p *Pool) pushTask(t *Task) {
 }
 
 // 协程池创建一个worker并且开始工作
-func (p *Pool) worker(workID int) {
+func (p *Pool) worker(workerID int) {
 	ticker := time.NewTicker(time.Second * 15)
 	defer ticker.Stop()
 	for {
@@ -83,14 +84,14 @@ func (p *Pool) worker(workID int) {
 				p.pushTask(task)
 				continue
 			}
-			fmt.Println("worker ID ", workID, " 执行 task ID", task.args[0].(int), "任务完毕")
+			fmt.Println("worker ID ", workerID, " 执行 task ID", task.args[0].(int), "任务完毕")
 			// 重新设置等待15s
 			ticker.Reset(time.Second * 15)
 		case <-ticker.C: // 15s 都收不到任何处理就回收
 			p.workerRecover.lock.Lock()
 			if p.workerNum-len(p.workerRecover.recoverList) > 1 {
-				fmt.Println("worker ID ", workID, " 超时回收")
-				p.workerRecover.recoverList = append(p.workerRecover.recoverList, workID)
+				fmt.Println("worker ID ", workerID, " 超时回收")
+				p.workerRecover.recoverList = append(p.workerRecover.recoverList, workerID)
 			} else {
 				ticker.Reset(time.Second * 15)
 			}
@@ -100,7 +101,7 @@ func (p *Pool) worker(workID int) {
 }
 
 // 协程池Pool开始工作
-func (p *Pool) Run() {
+func (p *Pool) Start() {
 	p.wg.Add(p.workerNum)
 	p.stopCtx, p.stopCancelFunc = context.WithCancel(context.Background())
 	for i := 0; i < p.workerNum; i++ {
@@ -112,9 +113,9 @@ func (p *Pool) Run() {
 func (p *Pool) Restart() {
 	p.workerRecover.lock.Lock()
 	defer p.workerRecover.lock.Unlock()
-	for _, workID := range p.workerRecover.recoverList {
-		fmt.Println("worker ID ", workID, " 重开")
-		go p.worker(workID)
+	for _, workerID := range p.workerRecover.recoverList {
+		fmt.Println("worker ID ", workerID, " 重开")
+		go p.worker(workerID)
 	}
 }
 

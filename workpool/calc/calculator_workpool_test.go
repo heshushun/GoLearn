@@ -23,7 +23,7 @@ func TestCalculator_Workpool(t *testing.T) {
 	p := NewPool(3, 10)
 
 	//启动协程池p
-	p.Run()
+	p.Start()
 
 	//var wg sync.WaitGroup
 	//wg.Add(10)
