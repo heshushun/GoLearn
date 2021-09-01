@@ -8,6 +8,29 @@ $ curl "http://localhost:9999/api?key=kkk"
 kkk not exist
 */
 
+// Overall flow char										     requsets					        local
+// gee := createGroup() --------> /api Service : 9999 ------------------------------> group.Get(key) ------> g.mainCache.Get(key)
+// 						|											^					|
+// 						|											|					|remote
+// 						v											|					v
+// 				cache Service : 800x								|			g.peers.PickPeer(key)
+// 						|create hash ring & init peerGetter			|					|
+// 						|registry peers write in g.peer				|					|p.httpGetters[p.hashRing(key)]
+// 						v											|					|
+//			httpPool.SetPeer(otherAddrs...)								|					v
+// 		g.peers = group.RegisterPeers(httpPool)						|			g.getFromPeer(peerGetter, key)
+// 						|											|					|
+// 						|											|					|
+// 						v											|					v
+// 		http.ListenAndServe("localhost:800x", httpPool)<------------+--------------peerGetter.Get(key)
+// 						|											|
+// 						|requsets									|
+// 						v											|
+// 					p.ServeHttp(w, r)								|
+// 						|											|
+// 						|url.parse()								|
+// 						|--------------------------------------------
+
 import (
 	"GoLearn/opencache/cache"
 	"flag"
