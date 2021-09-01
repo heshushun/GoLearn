@@ -15,27 +15,25 @@ import (
 	"sync"
 )
 
-// A Getter loads data for a key.
+// 回调函数(callback)，在缓存不存在时，调用这个函数，得到源数据。
 type Getter interface {
 	Get(key string) ([]byte, error)
 }
 
-// A GetterFunc implements Getter with a function.
-// 回调函数(callback)，在缓存不存在时，调用这个函数，得到源数据。
 // 函数类型实现某一个接口，称之为接口型函数
 type GetterFunc func(key string) ([]byte, error)
 
-// Get implements Getter interface function
+// 实现接口的方法
 func (f GetterFunc) Get(key string) ([]byte, error) {
 	return f(key)
 }
 
-// A Group is a cache namespace and associated data loaded spread over
 // 一个 Group 可以认为是一个缓存的命名空间
 type Group struct {
-	name      string // 唯一的名称
-	getter    Getter // 缓存未命中时获取源数据的回调(callback)
-	mainCache cache  // 一开始实现的并发缓存
+	name      string     // 唯一的名称
+	getter    Getter     // 缓存未命中时获取源数据的回调(callback)
+	mainCache cache      // 一开始实现的并发缓存
+	peers     PeerPicker // 用来选择远程节点
 }
 
 var (
@@ -43,7 +41,6 @@ var (
 	groups = make(map[string]*Group) // 所有的缓存组
 )
 
-// NewGroup create a new instance of Group
 func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
 	if getter == nil {
 		panic("nil Getter")
@@ -59,8 +56,6 @@ func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
 	return g
 }
 
-// GetGroup returns the named group previously created with NewGroup, or
-// nil if there's no such group.
 func GetGroup(name string) *Group {
 	mu.RLock()
 	g := groups[name]
@@ -68,7 +63,15 @@ func GetGroup(name string) *Group {
 	return g
 }
 
-// Get value for a key from cache
+// 将 实现了 PeerPicker 接口的 HTTPPool 注入到 Group 中
+func (g *Group) RegisterPeers(peers PeerPicker) {
+	if g.peers != nil {
+		panic("RegisterPeerPicker called more than once")
+	}
+	g.peers = peers
+}
+
+// 从缓存获取数据
 func (g *Group) Get(key string) (ByteView, error) {
 	if key == "" {
 		return ByteView{}, fmt.Errorf("key is required")
@@ -84,10 +87,31 @@ func (g *Group) Get(key string) (ByteView, error) {
 	return g.load(key)
 }
 
+// 加载数据源
 func (g *Group) load(key string) (value ByteView, err error) {
+	if g.peers != nil {
+		// 选择节点，若非本机节点，则调用 getFromPeer() 从远程获取
+		if peer, ok := g.peers.PickPeer(key); ok {
+			if value, err = g.getFromPeer(peer, key); err == nil {
+				return value, nil
+			}
+			log.Println("[GeeCache] Failed to get from peer", err)
+		}
+	}
+
 	return g.getLocally(key)
 }
 
+// 从远程节点 获取数据源
+func (g *Group) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
+	bytes, err := peer.Get(g.name, key)
+	if err != nil {
+		return ByteView{}, err
+	}
+	return ByteView{b: bytes}, nil
+}
+
+// 从本机节点 获取数据源
 func (g *Group) getLocally(key string) (ByteView, error) {
 	// 调用 回调函数 获取数据源
 	bytes, err := g.getter.Get(key)

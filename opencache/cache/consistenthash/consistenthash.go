@@ -16,10 +16,9 @@ import (
 	"strconv"
 )
 
-// Hash maps bytes to uint32
+// 哈希算法
 type Hash func(data []byte) uint32
 
-// Map constains all hashed keys
 // Map 是一致性哈希算法的主数据结构
 type Map struct {
 	hash     Hash           // Hash 函数
@@ -28,7 +27,6 @@ type Map struct {
 	hashMap  map[int]string // 虚拟节点与真实节点的映射表, 键是虚拟节点的哈希值，值是真实节点的名称。{虚拟hash: key}
 }
 
-// New creates a Map instance
 func New(replicas int, fn Hash) *Map {
 	m := &Map{
 		replicas: replicas,
@@ -41,8 +39,7 @@ func New(replicas int, fn Hash) *Map {
 	return m
 }
 
-// Add adds some keys to the hash.
-// 添加每个真实的key
+// 添加 真实的key
 func (m *Map) Add(keys ...string) {
 	// 每一个真实节点 key，对应创建 m.replicas 个虚拟节点
 	for _, key := range keys {
@@ -57,17 +54,26 @@ func (m *Map) Add(keys ...string) {
 	sort.Ints(m.hashKeys)
 }
 
-// Get gets the closest item in the hash to the provided key.
+// 删除 真实的key
+func (m *Map) Remove(key string) {
+	for i := 0; i < m.replicas; i++ {
+		hash := int(m.hash([]byte(strconv.Itoa(i) + key)))
+		idx := sort.SearchInts(m.hashKeys, hash)
+		m.hashKeys = append(m.hashKeys[:idx], m.hashKeys[idx+1:]...)
+		delete(m.hashMap, hash)
+	}
+}
+
+// 哈希获取 映射到的真实节点
 func (m *Map) Get(searchKey string) string {
 	if len(m.hashKeys) == 0 {
 		return ""
 	}
 
 	hash := int(m.hash([]byte(searchKey)))
-	// Binary search for appropriate replica.
 	// 顺时针找到第一个匹配的虚拟节点的下标 idx
 	idx := sort.Search(len(m.hashKeys), func(i int) bool {
-		return m.hashKeys[i] >= hash
+		return m.hashKeys[i] >= (hash % m.hashKeys[len(m.hashKeys)-1])
 	})
 	// 虚拟节点key
 	hashKey := m.hashKeys[idx%len(m.hashKeys)]

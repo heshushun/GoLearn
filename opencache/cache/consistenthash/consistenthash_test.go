@@ -22,7 +22,7 @@ func TestHashing(t *testing.T) {
 		"2":  "2",
 		"11": "2",
 		"23": "4",
-		"27": "2",
+		"39": "2",
 	}
 
 	for k, v := range testCases {

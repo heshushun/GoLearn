@@ -28,7 +28,7 @@ func TestGet(t *testing.T) {
 	loadCounts := make(map[string]int, len(db))
 	gee := NewGroup("scores", 2<<10, GetterFunc(
 		func(key string) ([]byte, error) {
-			log.Println("[SlowDB] search key", key)
+			log.Println("[DB] search key", key)
 			if v, ok := db[key]; ok {
 				if _, ok := loadCounts[key]; !ok {
 					loadCounts[key] = 0
