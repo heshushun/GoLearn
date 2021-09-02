@@ -10,6 +10,7 @@
 package cache
 
 import (
+	"GoLearn/opencache/cache/singleflight"
 	"fmt"
 	"log"
 	"sync"
@@ -30,10 +31,11 @@ func (f GetterFunc) Get(key string) ([]byte, error) {
 
 // 一个 Group 可以认为是一个缓存的命名空间
 type Group struct {
-	name      string     // 唯一的名称
-	getter    Getter     // 缓存未命中时获取源数据的回调(callback)
-	mainCache cache      // 一开始实现的并发缓存
-	peers     PeerPicker // 用来选择远程节点
+	name      string              // 唯一的名称
+	getter    Getter              // 缓存未命中时获取源数据的回调(callback)
+	mainCache cache               // 一开始实现的并发缓存
+	peers     PeerPicker          // 用来选择远程节点
+	loader    *singleflight.Group // 单次请求，防止缓存击穿
 }
 
 var (
@@ -51,6 +53,7 @@ func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
 		name:      name,
 		getter:    getter,
 		mainCache: cache{cacheBytes: cacheBytes},
+		loader:    &singleflight.Group{},
 	}
 	groups[name] = g
 	return g
@@ -89,17 +92,24 @@ func (g *Group) Get(key string) (ByteView, error) {
 
 // 加载数据源
 func (g *Group) load(key string) (value ByteView, err error) {
-	if g.peers != nil {
-		// 选择节点，若非本机节点，则调用 getFromPeer() 从远程获取
-		if peer, ok := g.peers.PickPeer(key); ok {
-			if value, err = g.getFromPeer(peer, key); err == nil {
-				return value, nil
+	// 防止相同的key时多次调用getFromPeer，导致缓存击穿
+	ret, err := g.loader.Do(key, func() (interface{}, error) {
+		if g.peers != nil {
+			// 选择节点，若非本机节点，则调用 getFromPeer() 从远程获取
+			if peer, ok := g.peers.PickPeer(key); ok {
+				if value, err = g.getFromPeer(peer, key); err == nil {
+					return value, nil
+				}
+				log.Println("[GeeCache] Failed to get from peer", err)
 			}
-			log.Println("[GeeCache] Failed to get from peer", err)
 		}
-	}
+		return g.getLocally(key)
+	})
 
-	return g.getLocally(key)
+	if err == nil {
+		return ret.(ByteView), nil
+	}
+	return
 }
 
 // 从远程节点 获取数据源
