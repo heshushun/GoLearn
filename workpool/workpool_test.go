@@ -58,3 +58,54 @@ func TestWorkPool_Start(t *testing.T) {
 	}
 	time.Sleep(100 * time.Second)
 }
+
+var closeChan chan bool
+var resultQueue chan int
+
+func receiveAntiPlayResult() {
+	t := time.NewTicker(time.Second)
+	defer t.Stop()
+	for {
+		<-t.C
+		select {
+		case <-closeChan:
+			println("!!!!! close2")
+			close(resultQueue)
+			return
+		case resultQueue <- 9: // 接收
+		}
+	}
+}
+
+// 反作弊战斗结果 统一分发
+func dispatchAntiPlayResult() {
+	for {
+		select {
+		//case <-closeChan:
+		//	println("!!!!! close3")
+		//	return
+		case r, ok := <-resultQueue: // 分发
+			if !ok {
+				println("!!!!! close3")
+				return
+			}
+			if ok && r == 9 {
+				println("!!!!! ", r)
+			}
+		default:
+
+		}
+	}
+}
+
+//
+func TestWorkPool_ooo(t *testing.T) {
+	closeChan = make(chan bool)
+	resultQueue = make(chan int, 1024)
+	go receiveAntiPlayResult()
+	time.Sleep(1 * time.Second)
+	go dispatchAntiPlayResult()
+	time.Sleep(1 * time.Second)
+	closeChan <- true
+	time.Sleep(5 * time.Second)
+}

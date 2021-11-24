@@ -110,6 +110,7 @@ func (p *HTTPPool) PickPeer(key string) (PeerGetter, bool) {
 	return nil, false
 }
 
+// 确保HTTPPool实现了PeerPicker接口 如果没有实现会报错的
 var _ PeerPicker = (*HTTPPool)(nil)
 
 // httpGetter 就对应于 HTTP 客户端。
@@ -147,4 +148,5 @@ func (h *httpGetter) Get(in *pb.Request, out *pb.Response) error {
 	return nil
 }
 
+// 确保httpGetter实现了PeerGetter接口 如果没有实现会报错的
 var _ PeerGetter = (*httpGetter)(nil)
