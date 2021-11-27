@@ -307,7 +307,6 @@ func main() {
 			fmt.Printf("Executed.\n")
 		case EXECUTE_TABLE_FULL:
 			fmt.Printf("Error: Table full.\n")
-			continue
 		}
 
 		//inputBuffer.executeStatement(&statement)
