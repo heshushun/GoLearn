@@ -244,7 +244,7 @@ func NewPager(fileName string) *Pager {
 	var file *os.File
 	var err error
 	if b {
-		file, err = os.Open(fileName)
+		file, err = os.OpenFile(fileName, os.O_RDWR, 0666)
 	} else {
 		file, err = os.Create(fileName)
 	}
@@ -290,15 +290,16 @@ func (r *Pager) getPage(pageNum int) []byte {
 			//defer r.closeFile(file)
 
 			// 偏移到头部
-			r.file.Seek(int64(pageNum)*PAGE_SIZE, io.SeekStart)
+			_, _ = r.file.Seek(int64(pageNum)*PAGE_SIZE, io.SeekStart)
 			// 文件读到内存
 			buf := make([]byte, PAGE_SIZE)
-			n, err := r.file.Read(buf)
+			re := bufio.NewReader(r.file)
+			n, err := re.Read(buf)
 			if (err != nil && err != io.EOF) || n < 0 {
 				fmt.Printf("Error reading file: %v \n", err)
 				os.Exit(0)
 			}
-			r.pages[pageNum] = append(r.pages[pageNum], buf[:n]...)
+			copy(r.pages[pageNum], buf)
 		}
 	}
 	return r.pages[pageNum]
