@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"os"
@@ -376,7 +377,7 @@ func StringToBytes(str string, n int) []byte {
 }
 
 func BytesToString(buf []byte) string {
-	return string(buf)
+	return string(bytes.TrimRight(buf, "\x00"))
 }
 
 func Int32ToBytes(i int32, n int) []byte {
