@@ -18,18 +18,12 @@ func (r *Role) addShop(name string, shop *Shop) {
 	r.shops[name] = shop
 }
 
-type ShopGridInfo struct {
-	items       [2]int // (id, item)
-	buyCount    int
-	lastBuyTime int64
-}
-
 type Shop struct {
-	// {id: grid}
-	grids map[int]*Grid
+	// {id: GridRaw}
+	gridRows map[int]*GridRaw
 
-	// {position: gridModel}
-	gridModels map[int]*ShopGridInfo
+	// {position: Grid}
+	gridModels map[int]*Grid
 }
 
 func NewShop() *Shop {
@@ -45,12 +39,17 @@ func (r *Shop) Refresh() {
 
 }
 
+func (r *Shop) GetGridRaw(id int) *GridRaw {
+	if r.gridRows == nil {
+		r.gridRows = make(map[int]*GridRaw)
+	}
+	return r.gridRows[id]
+}
+
 type Grid struct {
-	position   int
-	item       string
-	kind       int // 1: fixed 2: random
-	countLimit int
-	dayLimit   int // 单位: 天
+	item        [2]int // (id, item)
+	buyCount    int
+	lastBuyTime int64
 }
 
 func (r *Grid) BuyItem() {
@@ -59,6 +58,24 @@ func (r *Grid) BuyItem() {
 
 func (r *Grid) CanBuy() {
 
+}
+
+type GridRaw struct {
+	id         int
+	position   int
+	item       int
+	kind       int // 1: fixed 2: random
+	randomProb int
+	countLimit int // 0: 无限购买
+	dayLimit   int // 单位: 天
+}
+
+func (r *GridRaw) GenItems(position int) [2]int {
+	if r.kind == 1 {
+		return [2]int{r.id, r.item}
+	}
+
+	return [2]int{}
 }
 
 func main() {
