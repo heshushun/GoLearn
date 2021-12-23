@@ -276,7 +276,7 @@ func main() {
 	row4 := GridRow{id: 4, position: 4, item: "card_1", kind: 2, randomWeight: 10, countLimit: 1}
 	row5 := GridRow{id: 5, position: 4, item: "card_2", kind: 2, randomWeight: 20, countLimit: 2}
 	row6 := GridRow{id: 4, position: 4, item: "card_3", kind: 2, randomWeight: 30, countLimit: 3}
-	row7 := GridRow{id: 7, position: 5, item: "exp", kind: 1, countLimit: 1, dayLimit: 1, levelLimit: 20}
+	row7 := GridRow{id: 7, position: 5, item: "exp", kind: 1, countLimit: 2, dayLimit: 1, levelLimit: 20}
 	row8 := GridRow{id: 8, position: 6, item: "coin3", kind: 1, countLimit: 1, dayLimit: 1, vipLimit: 7}
 
 	// gen shop
@@ -290,15 +290,24 @@ func main() {
 	rows = append(rows, &row6)
 	rows = append(rows, &row7)
 	rows = append(rows, &row8)
+
 	shop1 := NewShop(rows)
+	shop1.Refresh("shop_1")
 	role.addShop("shop_1", shop1)
 
-	// refresh shop
-	shop := role.shops["shop_1"]
-	shop.Refresh("shop_1")
+	shop2 := NewShop(rows)
+	shop2.Refresh("shop_2")
+	role.addShop("shop_2", shop2)
 
+	shop := role.shops["shop_1"]
 	// buy shop
 	shop.Buy(role, 1, 1)
+	shop.ShowShop()
+	shop.Buy(role, 1, 1)
+	shop.ShowShop()
+	shop.Buy(role, 2, 2)
+	shop.ShowShop()
+	shop.Buy(role, 2, 1)
 	shop.ShowShop()
 	shop.Buy(role, 5, 1)
 	shop.ShowShop()
