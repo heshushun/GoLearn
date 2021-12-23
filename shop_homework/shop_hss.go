@@ -11,16 +11,6 @@ import (
 	"time"
 )
 
-const OneDay = 24 * time.Hour
-
-func NowTime() int64 {
-	return time.Now().Unix()
-}
-
-func AddDays(t int64, days int) int64 {
-	return time.Unix(t, 0).AddDate(0, 0, days).Unix()
-}
-
 /*
 *
 * Role
@@ -113,7 +103,7 @@ func (r *Shop) Refresh(shopName string) {
 	r.ShowShop()
 }
 
-func (r *Shop) onCheckUnlock(role *Role, position int) {
+func (r *Shop) OnCheckUnlock(role *Role, position int) {
 	if grid, ok := r.gridModels[position]; ok {
 		grid.Unlock(role, func(id int) *GridRow {
 			if r.gridRows == nil {
@@ -312,26 +302,26 @@ func main() {
 	shop.ShowShop()
 	shop.Buy(role, 5, 1)
 	shop.ShowShop()
-	shop.onCheckUnlock(role, 5)
+	shop.OnCheckUnlock(role, 5)
 	shop.Buy(role, 5, 1)
 	shop.ShowShop()
 	shop.Buy(role, 5, 1)
 	shop.ShowShop()
 
 	// cmd 命令操作
-	cmdInput(role)
+	CmdInput(role)
 
 }
 
-func cmdInput(role *Role) {
+func CmdInput(role *Role) {
 	for {
-		printPrompt()
-		buffer := readInput()
+		PrintPrompt()
+		buffer := ReadInput()
 
 		if buffer == "exit" {
 			os.Exit(0)
 		} else if buffer == "help" {
-			printHelp()
+			PrintHelp()
 		} else if buffer == "shop" {
 			role.printShopNames()
 		} else {
@@ -360,7 +350,7 @@ func cmdInput(role *Role) {
 				if err != nil {
 					fmt.Printf("Cmd pos error. Could not parse.\n")
 				}
-				shop.onCheckUnlock(role, position)
+				shop.OnCheckUnlock(role, position)
 			case "buy":
 				if len(cmdList) < 4 {
 					fmt.Printf("Cmd error. Could not parse.\n")
@@ -383,11 +373,11 @@ func cmdInput(role *Role) {
 	}
 }
 
-func printPrompt() {
+func PrintPrompt() {
 	fmt.Printf("cmd(注: help) > ")
 }
 
-func printHelp() {
+func PrintHelp() {
 	fmt.Print("--------------------------\n")
 	fmt.Printf("%-20s :退出 \n", "exit")
 	fmt.Printf("%-20s :商店列表 \n", "shop")
@@ -398,7 +388,7 @@ func printHelp() {
 	fmt.Print("--------------------------\n\n")
 }
 
-func readInput() string {
+func ReadInput() string {
 	reader := bufio.NewReader(os.Stdin)
 	res, _, err := reader.ReadLine()
 	buffer := strings.TrimSpace(string(res))
@@ -407,4 +397,14 @@ func readInput() string {
 		os.Exit(0)
 	}
 	return buffer
+}
+
+const OneDay = 24 * time.Hour
+
+func NowTime() int64 {
+	return time.Now().Unix()
+}
+
+func AddDays(t int64, days int) int64 {
+	return time.Unix(t, 0).AddDate(0, 0, days).Unix()
 }
