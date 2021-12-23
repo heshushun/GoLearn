@@ -1,8 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"math/rand"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -40,6 +45,14 @@ func NewRole(name string, level, vip int) *Role {
 
 func (r *Role) addShop(name string, shop *Shop) {
 	r.shops[name] = shop
+}
+
+func (r *Role) printShopNames() {
+	fmt.Print("--------------------------\n")
+	for name, _ := range r.shops {
+		fmt.Printf("——> %s\n", name)
+	}
+	fmt.Print("--------------------------\n\n")
 }
 
 /*
@@ -115,8 +128,15 @@ func (r *Shop) onCheckUnlock(role *Role, position int) {
 
 func (r *Shop) ShowShop() {
 	fmt.Print("--------------------------\n")
-	for pos, grid := range r.gridModels {
-		fmt.Printf("%-2d ——> item: %-8s  buyCount: %-2d  lastTime: %-10v \n", pos, grid.item, grid.buyCount, grid.lastBuyTime)
+	newPos := make([]int, len(r.gridRower.positions))
+	copy(newPos, r.gridRower.positions)
+	sort.Ints(newPos)
+	for _, pos := range newPos {
+		if grid, ok := r.gridModels[pos]; ok {
+			row := r.gridRows[grid.id]
+			fmt.Printf("%-2d ——> item: %-8s buyLimit: %-2d buyCount: %-2d dayLimit: %-2d lastTime: %-10v levelLimit: %-2d vipLimit: %-2d \n",
+				pos, grid.item, row.countLimit, grid.buyCount, row.dayLimit, grid.lastBuyTime, row.levelLimit, row.vipLimit)
+		}
 	}
 	fmt.Print("--------------------------\n\n")
 }
@@ -148,7 +168,7 @@ func (r *Grid) BuyItem(role *Role, count int, f func(id int) *GridRow) {
 func (r *Grid) CanBuy(role *Role, count int, f func(id int) *GridRow) bool {
 	row := f(r.id)
 	// level
-	if role.level < row.LevelLimit {
+	if role.level < row.levelLimit {
 		fmt.Printf("!!! %s buy %s %d fail level no enough \n", role.name, r.item, count)
 		return false
 	}
@@ -180,7 +200,7 @@ func (r *Grid) CanBuy(role *Role, count int, f func(id int) *GridRow) bool {
 
 func (r *Grid) Unlock(role *Role, f func(id int) *GridRow) {
 	row := f(r.id)
-	role.level = row.LevelLimit
+	role.level = row.levelLimit
 	role.vip = row.vipLimit
 }
 
@@ -250,7 +270,7 @@ type GridRow struct {
 	randomWeight int
 	countLimit   int // 0: 无限购买
 	dayLimit     int // 0: 无时间限制 单位: 天
-	LevelLimit   int // 等级限制
+	levelLimit   int // 等级限制
 	vipLimit     int // vip限制
 }
 
@@ -260,62 +280,17 @@ func main() {
 	role := NewRole("hss", 10, 1)
 
 	// gridRow
-	row1 := GridRow{
-		id:       1,
-		position: 1,
-		item:     "gold",
-		kind:     1,
-	}
-	row2 := GridRow{
-		id:         2,
-		position:   2,
-		item:       "rmb",
-		kind:       1,
-		countLimit: 1,
-	}
-	row3 := GridRow{
-		id:       3,
-		position: 3,
-		item:     "box_1",
-		kind:     1,
-		dayLimit: 1,
-	}
-	row4 := GridRow{
-		id:           4,
-		position:     4,
-		item:         "card_1",
-		kind:         2,
-		randomWeight: 10,
-		countLimit:   1,
-	}
-	row5 := GridRow{
-		id:           5,
-		position:     4,
-		item:         "card_2",
-		kind:         2,
-		randomWeight: 20,
-		countLimit:   2,
-	}
-	row6 := GridRow{
-		id:           4,
-		position:     4,
-		item:         "card_3",
-		kind:         2,
-		randomWeight: 30,
-		countLimit:   3,
-	}
-	row7 := GridRow{
-		id:         7,
-		position:   5,
-		item:       "exp",
-		kind:       1,
-		countLimit: 1,
-		dayLimit:   1,
-		LevelLimit: 20,
-	}
+	row1 := GridRow{id: 1, position: 1, item: "gold", kind: 1}
+	row2 := GridRow{id: 2, position: 2, item: "rmb", kind: 1, countLimit: 1}
+	row3 := GridRow{id: 3, position: 3, item: "box_1", kind: 1, dayLimit: 1}
+	row4 := GridRow{id: 4, position: 4, item: "card_1", kind: 2, randomWeight: 10, countLimit: 1}
+	row5 := GridRow{id: 5, position: 4, item: "card_2", kind: 2, randomWeight: 20, countLimit: 2}
+	row6 := GridRow{id: 4, position: 4, item: "card_3", kind: 2, randomWeight: 30, countLimit: 3}
+	row7 := GridRow{id: 7, position: 5, item: "exp", kind: 1, countLimit: 1, dayLimit: 1, levelLimit: 20}
+	row8 := GridRow{id: 8, position: 6, item: "coin3", kind: 1, countLimit: 1, dayLimit: 1, vipLimit: 7}
 
 	// gen shop
-	rowLen := 7
+	rowLen := 8
 	rows := make([]*GridRow, 0, rowLen)
 	rows = append(rows, &row1)
 	rows = append(rows, &row2)
@@ -324,6 +299,7 @@ func main() {
 	rows = append(rows, &row5)
 	rows = append(rows, &row6)
 	rows = append(rows, &row7)
+	rows = append(rows, &row8)
 	shop1 := NewShop(rows)
 	role.addShop("shop_1", shop1)
 
@@ -342,4 +318,93 @@ func main() {
 	shop.Buy(role, 5, 1)
 	shop.ShowShop()
 
+	// cmd 命令操作
+	cmdInput(role)
+
+}
+
+func cmdInput(role *Role) {
+	for {
+		printPrompt()
+		buffer := readInput()
+
+		if buffer == "exit" {
+			os.Exit(0)
+		} else if buffer == "help" {
+			printHelp()
+		} else if buffer == "shop" {
+			role.printShopNames()
+		} else {
+			cmdList := strings.Fields(buffer)
+			if len(cmdList) < 2 {
+				fmt.Printf("Cmd error. Could not parse.\n")
+				continue
+			}
+			cmd := strings.TrimSpace(cmdList[0])
+			shopName := strings.TrimSpace(cmdList[1])
+			shop, ok := role.shops[shopName]
+			if !ok {
+				fmt.Printf("Cmd shop name error. Could not parse.\n")
+			}
+			switch cmd {
+			case "show":
+				shop.ShowShop()
+			case "refresh":
+				shop.Refresh(shopName)
+			case "unlock":
+				if len(cmdList) < 3 {
+					fmt.Printf("Cmd error. Could not parse.\n")
+					continue
+				}
+				position, err := strconv.Atoi(strings.TrimSpace(cmdList[2]))
+				if err != nil {
+					fmt.Printf("Cmd pos error. Could not parse.\n")
+				}
+				shop.onCheckUnlock(role, position)
+			case "buy":
+				if len(cmdList) < 4 {
+					fmt.Printf("Cmd error. Could not parse.\n")
+					continue
+				}
+				position, err1 := strconv.Atoi(strings.TrimSpace(cmdList[2]))
+				if err1 != nil {
+					fmt.Printf("Cmd pos error. Could not parse.\n")
+				}
+				count, err2 := strconv.Atoi(strings.TrimSpace(cmdList[3]))
+				if err2 != nil {
+					fmt.Printf("Cmd count error. Could not parse.\n")
+				}
+				shop.Buy(role, position, count)
+			default:
+				fmt.Printf("Cmd error. Could not parse.\n")
+				continue
+			}
+		}
+	}
+}
+
+func printPrompt() {
+	fmt.Printf("cmd(注: help) > ")
+}
+
+func printHelp() {
+	fmt.Print("--------------------------\n")
+	fmt.Printf("%-20s :退出 \n", "exit")
+	fmt.Printf("%-20s :商店列表 \n", "shop")
+	fmt.Printf("%-20s :商店信息 \n", "show shop_1 ")
+	fmt.Printf("%-20s :商店解锁 \n", "unlock shop_1 6")
+	fmt.Printf("%-20s :商店刷新 \n", "refresh shop_1")
+	fmt.Printf("%-20s :商店购买 \n", "buy shop_1 2 2")
+	fmt.Print("--------------------------\n\n")
+}
+
+func readInput() string {
+	reader := bufio.NewReader(os.Stdin)
+	res, _, err := reader.ReadLine()
+	buffer := strings.TrimSpace(string(res))
+	if err != nil {
+		fmt.Printf("Error reading input %v \n", err)
+		os.Exit(0)
+	}
+	return buffer
 }
