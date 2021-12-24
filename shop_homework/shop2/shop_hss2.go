@@ -111,9 +111,9 @@ func (r *Shop) Refresh(shopName string) {
 		case LevelGrid:
 			grid.Set(NewGridLevelVip())
 		case LimitGrid:
-			grid.Set(NewGridLevelVip())
+			grid.Set(NewGridLimit())
 		case MaryGrid:
-			grid.Set(NewGridLevelVip())
+			grid.Set(NewGridMany())
 		default:
 			fmt.Printf("%d classType error \n", row.classType)
 			continue
@@ -210,8 +210,8 @@ func (r *Grid) Unlock(role *Role, f func(id int) *GridRow) {
 type GridLevelVip struct {
 }
 
-func NewGridLevelVip() *GridLimit {
-	return &GridLimit{}
+func NewGridLevelVip() *GridLevelVip {
+	return &GridLevelVip{}
 }
 
 func (r *GridLevelVip) DoUnlock(role *Role, row *GridRow, m *GridModel) {
