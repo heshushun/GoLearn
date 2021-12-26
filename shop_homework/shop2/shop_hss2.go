@@ -11,6 +11,22 @@ import (
 	"time"
 )
 
+/*
+*
+* 作业 设计解释
+* 本次作业 实际上实现三大功能: 刷新(Refresh)、购买(Buy)、解锁(Unlock)。
+* 2个类层面: 商店(Shop)、栏位格子(Grid)。
+* 2大数据源: 配表(GridRows)、格子model数据(GridModel)。
+*
+* 我的刷新业务逻辑是 一栏位多id的随机构建。所以设计上这块我并没有放到格子层面，也没有做过多的设计。只是包装了一个GridRower 用来管理 GridRow。
+* 设计层面:
+* 1、商店(Shop) 设计很轻量。只是一个盒子，主要为 格子的组合、提供数据源。只对外提供三个功能 刷新(Refresh)、购买(Buy)、解锁(Unlock)的入口。
+* 2、设计主要体现在 栏位格子(Grid)上。抽象出格子基类Grid 以及通用接口IGrid 只关心 购买(Buy)和解锁(Unlock), 实体类逻辑是对各自购买限制种类格子的通用接口实现。
+* 3、单一职责原则: 如果某类购买限制种类格子的业务发生改变，只需要改动自身的业务实现，不会影响到其他种类。
+* 4、开闭原则: 如果需要新增一新类格子，只需要添加一个实现类实现通用接口，不用动原有框架较易扩展。
+*
+**/
+
 const (
 	LevelGrid = 1
 	LimitGrid = 2
@@ -20,6 +36,8 @@ const (
 /*
 *
 * Role
+* 注释：纯属为了游戏业务上更舒服理解而顺便添加的对象类。
+* 		刚好还可以用它来 设置其中一些购买限制条件数据源。
 *
 **/
 type Role struct {
@@ -54,16 +72,20 @@ func (r *Role) printShopNames() {
 /*
 *
 * Shop
+* 注释：a. 两大数据源 和 配置管理者gridRower 构成。
+* 		b. 对外提供刷新(Refresh)、购买(Buy)、解锁(OnCheckUnlock) 入口。
+* 		c. 职责仅是 组织格子。
+*		d. 它不关心 怎么刷新 怎么购买 怎么解锁，都是格子自己的事。不关心是什么种类格子用怎么购买逻辑，只要你是Grid就好。
 *
 **/
 type Shop struct {
 	// {id: GridRow}
-	gridRows map[int]*GridRow
+	gridRows map[int]*GridRow // gridRow数据
 
-	gridRower *GridRower
+	gridRower *GridRower // GridRower 负责构建管理gridRow
 
 	// {position: Grid}
-	gridModels map[int]*Grid
+	gridModels map[int]*Grid // GridModel数据
 }
 
 func NewShop(rows []*GridRow) *Shop {
@@ -137,6 +159,7 @@ func (r *Shop) OnCheckUnlock(role *Role, position int) {
 	}
 }
 
+// 打印显示商店数据。（交互作用 与业务逻辑无关）
 func (r *Shop) ShowShop() {
 	fmt.Print("--------------------------\n")
 	newPos := make([]int, len(r.gridRower.positions))
@@ -155,14 +178,19 @@ func (r *Shop) ShowShop() {
 /*
 *
 * Grid
+* 注释：a. Grid 由 IGrid逻辑接口 和 GridModel数据 构成。
+* 		b. Grid 对外也只提供通用函数 购买（BuyItem）、解锁（Unlock）。因为对外shop也只关心这两个。
+* 		c. GridModel数据源由 shop 提供。
+*		d. Grid是base类，抽象出共用IGrid接口，每个具体Grid类只要实现IGrid接口。
+*		e. GridLevelVip、GridLimit、GridMany 三个是每个的具体格子类。（当然这么拆分不严谨，随便拆的）
 *
 **/
-
 type IGrid interface {
 	CanBuy(role *Role, count int, row *GridRow, m *GridModel) bool
 	DoUnlock(role *Role, row *GridRow, m *GridModel)
 }
 
+// GridModel数据结构
 type GridModel struct {
 	id          int
 	item        string
@@ -170,6 +198,7 @@ type GridModel struct {
 	lastBuyTime int64
 }
 
+// Grid基类
 type Grid struct {
 	IGrid
 	GridModel
@@ -204,7 +233,7 @@ func (r *Grid) Unlock(role *Role, f func(id int) *GridRow) {
 
 /*
 *
-* GridLevelVip
+* GridLevelVip  具体格子类一
 *
 **/
 type GridLevelVip struct {
@@ -236,7 +265,7 @@ func (r *GridLevelVip) CanBuy(role *Role, count int, row *GridRow, m *GridModel)
 
 /*
 *
-* GridLimit
+* GridLimit  具体格子类二
 *
 **/
 type GridLimit struct {
@@ -273,7 +302,7 @@ func (r *GridLimit) CanBuy(role *Role, count int, row *GridRow, m *GridModel) bo
 
 /*
 *
-* GridMany
+* GridMany  具体格子类三
 *
 **/
 type GridMany struct {
@@ -325,6 +354,9 @@ func (r *GridMany) CanBuy(role *Role, count int, row *GridRow, m *GridModel) boo
 /*
 *
 * GridRower
+* 注释：a. 配置GridRow的管理者。
+*		b. 对GridRow做个二次处理化并缓存。类似于ClassInit。
+* 		c. 一个栏位多个row，因为刷新构建就它处理了。
 *
 **/
 type GridRower struct {
@@ -378,15 +410,16 @@ func (r *GridRower) Random(position int) (int, string) {
 /*
 *
 * GridRow
+* 注释：配置结构
 *
 **/
 type GridRow struct {
 	id           int
 	position     int
 	item         string
-	kind         int // 1: fixed 2: random
+	kind         int // 控制刷新 1: fixed 2: random
 	randomWeight int
-	classType    int // 1: 等级 2: limit 3: mary （注: 格子购买限制分类 3是1和2之和）
+	classType    int // 控制购买 1: 等级 2: limit 3: mary （注: 格子购买限制分类 3是1和2之和）
 	countLimit   int // 0: 无限购买
 	dayLimit     int // 0: 无时间限制 单位: 天
 	roleLevel    int // 等级限制
@@ -398,7 +431,7 @@ func main() {
 	// role
 	role := NewRole("hss", 10, 1)
 
-	// gridRow
+	// gridRow（TODO kind 控制刷新；classType 控制购买）
 	row1 := GridRow{id: 1, position: 1, item: "gold", kind: 1, classType: 1}
 	row2 := GridRow{id: 2, position: 2, item: "rmb", kind: 1, classType: 2, countLimit: 1}
 	row3 := GridRow{id: 3, position: 3, item: "box_1", kind: 1, classType: 2, dayLimit: 1}
@@ -451,10 +484,15 @@ func main() {
 
 }
 
+// 命令行交互函数（交互作用 与业务逻辑无关）
 func CmdInput(role *Role) {
 	for {
 		PrintPrompt()
 		buffer := ReadInput()
+
+		if buffer == "" {
+			continue
+		}
 
 		if buffer == "exit" {
 			os.Exit(0)
@@ -511,10 +549,12 @@ func CmdInput(role *Role) {
 	}
 }
 
+// 打印输入提示（交互作用 与业务逻辑无关）
 func PrintPrompt() {
 	fmt.Printf("cmd(注: help) > ")
 }
 
+// 打印Help（交互作用 与业务逻辑无关）
 func PrintHelp() {
 	fmt.Print("--------------------------\n")
 	fmt.Printf("%-20s :退出 \n", "exit")
@@ -526,6 +566,7 @@ func PrintHelp() {
 	fmt.Print("--------------------------\n\n")
 }
 
+// 接收输入读取（交互作用 与业务逻辑无关）
 func ReadInput() string {
 	reader := bufio.NewReader(os.Stdin)
 	res, _, err := reader.ReadLine()
