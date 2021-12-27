@@ -79,10 +79,10 @@ func (r *Role) printShopNames() {
 *
 **/
 type Shop struct {
+	gridRower *GridRower // GridRower 负责构建管理gridRow
+
 	// {id: GridRow}
 	gridRows map[int]*GridRow // gridRow数据
-
-	gridRower *GridRower // GridRower 负责构建管理gridRow
 
 	// {position: Grid}
 	gridModels map[int]*Grid // GridModel数据
@@ -101,14 +101,23 @@ func NewShop(rows []*GridRow) *Shop {
 	return shop
 }
 
+func GridFactory(gridType int) IGrid {
+	switch gridType {
+	case LevelGrid:
+		return NewGridLevelVip()
+	case LimitGrid:
+		return NewGridLimit()
+	case MaryGrid:
+		return NewGridMany()
+	default:
+		fmt.Printf("%d classType error \n", gridType)
+		return nil
+	}
+}
+
 func (r *Shop) Buy(role *Role, position, count int) {
 	if grid, ok := r.gridModels[position]; ok {
-		grid.BuyItem(role, count, func(id int) *GridRow {
-			if r.gridRows == nil {
-				r.gridRows = make(map[int]*GridRow)
-			}
-			return r.gridRows[id]
-		})
+		grid.BuyItem(role, count)
 	} else {
 		fmt.Printf("no this position %d \n", position)
 	}
@@ -120,27 +129,15 @@ func (r *Shop) Refresh(shopName string) {
 		if id == 0 {
 			continue
 		}
-		grid := Grid{
-			GridModel: GridModel{
-				id:          id,
-				item:        item,
-				buyCount:    0,
-				lastBuyTime: 0,
-			},
-		}
 		row := r.gridRows[id]
-		switch row.classType {
-		case LevelGrid:
-			grid.Set(NewGridLevelVip())
-		case LimitGrid:
-			grid.Set(NewGridLimit())
-		case MaryGrid:
-			grid.Set(NewGridMany())
-		default:
-			fmt.Printf("%d classType error \n", row.classType)
-			continue
+		gridModel := &GridModel{
+			id:          id,
+			item:        item,
+			buyCount:    0,
+			lastBuyTime: 0,
 		}
-		r.gridModels[position] = &grid
+		grid := NewGrid(GridFactory(row.classType), gridModel, row)
+		r.gridModels[position] = grid
 	}
 	fmt.Printf("%s refresh success \n", shopName)
 	r.ShowShop()
@@ -148,12 +145,7 @@ func (r *Shop) Refresh(shopName string) {
 
 func (r *Shop) OnCheckUnlock(role *Role, position int) {
 	if grid, ok := r.gridModels[position]; ok {
-		grid.Unlock(role, func(id int) *GridRow {
-			if r.gridRows == nil {
-				r.gridRows = make(map[int]*GridRow)
-			}
-			return r.gridRows[id]
-		})
+		grid.Unlock(role)
 	} else {
 		fmt.Printf("no this position %d \n", position)
 	}
@@ -167,9 +159,9 @@ func (r *Shop) ShowShop() {
 	sort.Ints(newPos)
 	for _, pos := range newPos {
 		if grid, ok := r.gridModels[pos]; ok {
-			row := r.gridRows[grid.id]
+			row := r.gridRows[grid.Row.id]
 			fmt.Printf("%-2d ——> item: %-8s buyLimit: %-2d buyCount: %-2d classType: %-2d dayLimit: %-2d lastTime: %-10v roleLevel: %-2d vipLevel: %-2d \n",
-				pos, grid.item, row.countLimit, grid.buyCount, row.classType, row.dayLimit, grid.lastBuyTime, row.roleLevel, row.vipLevel)
+				pos, grid.DB.item, row.countLimit, grid.DB.buyCount, row.classType, row.dayLimit, grid.DB.lastBuyTime, row.roleLevel, row.vipLevel)
 		}
 	}
 	fmt.Print("--------------------------\n\n")
@@ -201,33 +193,37 @@ type GridModel struct {
 // Grid基类
 type Grid struct {
 	IGrid
-	GridModel
+	DB  *GridModel
+	Row *GridRow
 }
 
-func (r *Grid) Set(grid IGrid) {
-	r.IGrid = grid
+func NewGrid(iGrid IGrid, db *GridModel, row *GridRow) *Grid {
+	grid := Grid{
+		IGrid: iGrid,
+		DB:    db,
+		Row:   row,
+	}
+	return &grid
 }
 
-func (r *Grid) BuyItem(role *Role, count int, f func(id int) *GridRow) {
-	row := f(r.id)
-	if !r.CanBuy(role, count, row, &r.GridModel) {
+func (r *Grid) BuyItem(role *Role, count int) {
+	if !r.CanBuy(role, count, r.Row, r.DB) {
 		return
 	}
 
-	fmt.Printf("%s buy %s %d success \n", role.name, r.item, count)
+	fmt.Printf("%s buy %s %d success \n", role.name, r.DB.item, count)
 
-	r.buyCount += count
-	r.lastBuyTime = NowTime()
+	r.DB.buyCount += count
+	r.DB.lastBuyTime = NowTime()
 
 }
 
-func (r *Grid) Unlock(role *Role, f func(id int) *GridRow) {
-	row := f(r.id)
-	if row.vipLevel != 0 || row.roleLevel != 0 {
-		r.DoUnlock(role, row, &r.GridModel)
+func (r *Grid) Unlock(role *Role) {
+	if r.Row.vipLevel != 0 || r.Row.roleLevel != 0 {
+		r.DoUnlock(role, r.Row, r.DB)
 	}
-	if row.dayLimit != 0 || row.countLimit != 0 {
-		r.DoUnlock(role, row, &r.GridModel)
+	if r.Row.dayLimit != 0 || r.Row.countLimit != 0 {
+		r.DoUnlock(role, r.Row, r.DB)
 	}
 }
 
