@@ -101,20 +101,6 @@ func NewShop(rows []*GridRow) *Shop {
 	return shop
 }
 
-func GridFactory(gridType int) IGrid {
-	switch gridType {
-	case LevelGrid:
-		return NewGridLevelVip()
-	case LimitGrid:
-		return NewGridLimit()
-	case MaryGrid:
-		return NewGridMany()
-	default:
-		fmt.Printf("%d classType error \n", gridType)
-		return nil
-	}
-}
-
 func (r *Shop) Buy(role *Role, position, count int) {
 	if grid, ok := r.gridModels[position]; ok {
 		grid.BuyItem(role, count)
@@ -177,6 +163,20 @@ func (r *Shop) ShowShop() {
 *		e. GridLevelVip、GridLimit、GridMany 三个是每个的具体格子类。（当然这么拆分不严谨，随便拆的）
 *
 **/
+func GridFactory(gridType int) IGrid {
+	switch gridType {
+	case LevelGrid:
+		return NewGridLevelVip()
+	case LimitGrid:
+		return NewGridLimit()
+	case MaryGrid:
+		return NewGridMany()
+	default:
+		fmt.Printf("%d classType error \n", gridType)
+		return nil
+	}
+}
+
 type IGrid interface {
 	CanBuy(role *Role, count int, row *GridRow, m *GridModel) bool
 	DoUnlock(role *Role, row *GridRow, m *GridModel)
