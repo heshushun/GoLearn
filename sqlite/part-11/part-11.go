@@ -32,7 +32,7 @@ const (
 
 	ROW_SIZE = ID_SIZE + USERNAME_SIZE + EMAIL_SIZE
 
-	PAGE_SIZE       = 4102
+	PAGE_SIZE       = 4096
 	TABLE_MAX_PAGES = 100
 
 	/*
