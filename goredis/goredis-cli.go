@@ -13,7 +13,7 @@ func main() {
 	IPPort := "127.0.0.1:9736"
 
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Hi Godis")
+	fmt.Println("Hi Goredis")
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", IPPort)
 	checkError(err)
 
@@ -24,7 +24,6 @@ func main() {
 	for {
 		fmt.Print(IPPort + "> ")
 		text, _ := reader.ReadString('\n')
-		//清除掉回车换行符
 		text = strings.Replace(text, "\n", "", -1)
 		send2Server(text, conn)
 
@@ -37,13 +36,14 @@ func main() {
 			fmt.Println(IPPort+">", string(buff))
 		}
 	}
-
 }
+
 func send2Server(msg string, conn net.Conn) (n int, err error) {
 	data := []byte(msg)
 	n, err = conn.Write(data)
 	return n, err
 }
+
 func checkError(err error) {
 	if err != nil {
 		log.Println("err ", err.Error())
