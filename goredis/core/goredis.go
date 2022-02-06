@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"strings"
 )
 
 /*
@@ -31,9 +32,7 @@ func NewClient(conn net.Conn, db *GoredisDb) *Client {
 }
 
 func (c *Client) lookupKey(key string) *GoredisObject {
-	obj, ok := c.Db.Dict[key]
-	fmt.Printf("lookupKey key %v %v %v \n", key, ok, obj)
-	if ok {
+	if obj, ok := c.Db.Dict[key]; ok {
 		return obj
 	}
 	return nil
@@ -51,12 +50,15 @@ func (c *Client) call(s *Server) {
 func (c *Client) ReadQueryFromClient(conn net.Conn) (err error) {
 	buff := make([]byte, 512)
 	n, err := conn.Read(buff)
+
 	if err != nil {
 		log.Println("conn.Read err!=nil", err, "---len---", n, conn)
 		conn.Close()
 		return err
 	}
-	c.QueryBuf = string(buff)
+	tmp := string(buff)
+	parts := strings.Split(tmp, "\n")
+	c.QueryBuf = parts[0]
 	return nil
 }
 
@@ -68,7 +70,7 @@ func (c *Client) ProcessInputBuffer() {
 	c.Argc = argc
 	j := 0
 	for _, v := range argv {
-		c.Argv[j] = NewObject(ObjectTypeString, v)
+		c.Argv[j] = CreateObject(ObjectTypeString, v)
 		j++
 	}
 }
@@ -118,13 +120,12 @@ func (s *Server) ProcessCommand(c *Client) {
 		c.Cmd = cmd
 		c.call(s) // 执行命令
 	} else {
-		c.doReply(NewObject(ObjectTypeString, fmt.Sprintf("(error) ERR unknown command '%s'", name)))
+		c.doReply(CreateObject(ObjectTypeString, fmt.Sprintf("(error) ERR unknown command '%s'", name)))
 	}
 }
 
 func (s *Server) lookupCommand(name string) *GoredisCommand {
 	cmd, ok := s.Commands[name]
-	fmt.Printf("lookupCommand name %v %v %v \n", name, ok, cmd)
 	if ok {
 		return cmd
 	}
@@ -135,24 +136,23 @@ func SetCommand(c *Client, s *Server) {
 	objKey := c.Argv[1]
 	objValue := c.Argv[2]
 	if c.Argc != 3 {
-		c.doReply(NewObject(ObjectTypeString, "(error) ERR wrong number of arguments for 'set' command"))
+		c.doReply(CreateObject(ObjectTypeString, "(error) ERR wrong number of arguments for 'set' command"))
 		return
 	}
 	if stringKey, ok1 := objKey.Ptr.(string); ok1 {
 		if stringValue, ok2 := objValue.Ptr.(string); ok2 {
-			c.Db.Dict[stringKey] = NewObject(ObjectTypeString, stringValue)
+			c.Db.Dict[stringKey] = CreateObject(ObjectTypeString, stringValue)
 		}
 	}
-	c.doReply(objKey)
+	c.doReply(CreateObject(ObjectTypeString, "OK"))
 }
 
 func GetCommand(c *Client, s *Server) {
 	key := c.Argv[1].Ptr.(string)
 	obj := c.lookupKey(key) // key查找obj
-	fmt.Println("GetCommand ", obj)
 	if obj != nil {
 		c.doReply(obj)
 	} else {
-		c.doReply(NewObject(ObjectTypeString, "nil"))
+		c.doReply(CreateObject(ObjectTypeString, "nil"))
 	}
 }

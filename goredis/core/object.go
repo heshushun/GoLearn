@@ -12,7 +12,7 @@ type GoredisObject struct {
 	Ptr        interface{}
 }
 
-func NewObject(t int, ptr interface{}) *GoredisObject {
+func CreateObject(t int, ptr interface{}) *GoredisObject {
 	o := new(GoredisObject)
 	o.ObjectType = t
 	o.Ptr = ptr

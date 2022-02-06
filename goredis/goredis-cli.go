@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"strings"
 )
 
 func main() {
@@ -25,7 +24,7 @@ func main() {
 	for {
 		fmt.Print(IPPort + "> ")
 		text, _ := reader.ReadString('\n')
-		text = strings.Replace(text, "\n", "", -1)
+		// text = strings.Replace(text, "\n", "", -1)
 		send2Server(text, conn)
 
 		buff := make([]byte, 1024)
