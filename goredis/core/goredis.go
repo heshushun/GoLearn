@@ -94,6 +94,19 @@ type Server struct {
 	AofBuf           []string
 }
 
+func NewServer() *Server {
+	s := new(Server)
+	return s
+}
+
+func (s *Server) CreateClient(conn net.Conn) (c *Client) {
+	c = new(Client)
+	c.Db = s.Dbs[0]
+	c.Argv = make([]*GoredisObject, 5)
+	c.QueryBuf = ""
+	return c
+}
+
 func (s *Server) ProcessCommand(c *Client) {
 	name, ok := c.Argv[0].Ptr.(string)
 	if !ok {
