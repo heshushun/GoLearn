@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+const (
+	DefaultAofFile = "./goredis.aof"
+)
+
 // 服务端实例
 var goredis = core.NewServer()
 
@@ -53,7 +57,7 @@ func main() {
 
 // 处理请求
 func handle(conn net.Conn) {
-	c := goredis.CreateClient(conn)
+	c := goredis.CreateClient()
 	for {
 		err := c.ReadQueryFromClient(conn)
 		if err != nil {
@@ -82,6 +86,7 @@ func initServer() {
 	initDb()
 	goredis.Start = time.Now().UnixNano() / 1000000
 	//var getf server.CmdFun
+	goredis.AofFilename = DefaultAofFile
 
 	getCommand := &core.GoredisCommand{Name: "get", Proc: core.GetCommand}
 	setCommand := &core.GoredisCommand{Name: "set", Proc: core.SetCommand}
@@ -90,6 +95,7 @@ func initServer() {
 		"get": getCommand,
 		"set": setCommand,
 	}
+	LoadData()
 }
 
 // 初始化db
@@ -98,6 +104,21 @@ func initDb() {
 	for i := 0; i < goredis.DbNum; i++ {
 		goredis.Dbs[i] = new(core.GoredisDb)
 		goredis.Dbs[i].Dict = make(map[string]*core.GoredisObject, 100)
+	}
+}
+
+// 持久化load dada
+func LoadData() {
+	c := goredis.CreateClient()
+	c.FakeFlag = true
+	pros := core.ReadAof(goredis.AofFilename)
+	for _, v := range pros {
+		c.QueryBuf = string(v)
+		err := c.ProcessInputBuffer()
+		if err != nil {
+			log.Println("ProcessInputBuffer err", err)
+		}
+		goredis.ProcessCommand(c)
 	}
 }
 

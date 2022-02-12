@@ -22,6 +22,7 @@ type Client struct {
 	Db       *GoredisDb
 	QueryBuf string
 	Buf      string
+	FakeFlag bool
 }
 
 func NewClient(conn net.Conn, db *GoredisDb) *Client {
@@ -60,7 +61,12 @@ func (c *Client) addReplyString( r *proto.Resp) {
 }
 
 func (c *Client) call(s *Server) {
+	dirty := s.Dirty
 	c.Cmd.Proc(c, s)
+	dirty = s.Dirty - dirty
+	if dirty > 0 && !c.FakeFlag {
+		_ = AppendToFile(s.AofFilename, c.QueryBuf)
+	}
 }
 
 // 读取请求信息
@@ -119,10 +125,9 @@ func NewServer() *Server {
 	return s
 }
 
-func (s *Server) CreateClient(conn net.Conn) (c *Client) {
+func (s *Server) CreateClient() (c *Client) {
 	c = new(Client)
 	c.Db = s.Dbs[0]
-	c.Argv = make([]*GoredisObject, 5)
 	c.QueryBuf = ""
 	return c
 }
@@ -162,6 +167,7 @@ func SetCommand(c *Client, s *Server) {
 			c.Db.Dict[stringKey] = CreateObject(ObjectTypeString, stringValue)
 		}
 	}
+	s.Dirty++
 	c.addReplyStatus("OK")
 }
 
