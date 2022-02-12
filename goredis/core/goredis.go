@@ -1,12 +1,13 @@
 package core
 
 import (
+	"GoLearn/goredis/core/proto"
+	"bytes"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"os"
-	"regexp"
-	"strings"
 )
 
 /*
@@ -38,8 +39,24 @@ func (c *Client) lookupKey(key string) *GoredisObject {
 	return nil
 }
 
-func (c *Client) doReply(obj *GoredisObject) {
+func (c *Client) addReply(obj *GoredisObject) {
 	c.Buf = obj.Ptr.(string)
+}
+
+func (c *Client) addReplyStatus(s string) {
+	r := proto.NewString([]byte(s))
+	c.addReplyString(r)
+}
+
+func (c *Client) addReplyError(s string) {
+	r := proto.NewError([]byte(s))
+	c.addReplyString(r)
+}
+
+func (c *Client) addReplyString( r *proto.Resp) {
+	if ret, err := proto.EncodeToBytes(r); err == nil {
+		c.Buf = string(ret)
+	}
 }
 
 func (c *Client) call(s *Server) {
@@ -56,23 +73,24 @@ func (c *Client) ReadQueryFromClient(conn net.Conn) (err error) {
 		conn.Close()
 		return err
 	}
-	tmp := string(buff)
-	parts := strings.Split(tmp, "\n")
-	c.QueryBuf = parts[0]
+	c.QueryBuf = string(buff)
 	return nil
 }
 
 // 处理请求信息
-func (c *Client) ProcessInputBuffer() {
-	r := regexp.MustCompile("[^\\s]+")
-	parts := r.FindAllString(c.QueryBuf, -1)
-	argc, argv := len(parts), parts
-	c.Argc = argc
-	j := 0
-	for _, v := range argv {
-		c.Argv[j] = CreateObject(ObjectTypeString, v)
-		j++
+func (c *Client) ProcessInputBuffer() error {
+	//r := regexp.MustCompile("[^\\s]+")
+	decoder := proto.NewDecoder(bytes.NewReader([]byte(c.QueryBuf)))
+	//decoder := proto.NewDecoder(bytes.NewReader([]byte("*2\r\n$3\r\nget\r\n")))
+	if resp, err := decoder.DecodeMultiBulk(); err == nil {
+		c.Argc = len(resp)
+		c.Argv = make([]*GoredisObject, c.Argc)
+		for k, s := range resp {
+			c.Argv[k] = CreateObject(ObjectTypeString, string(s.Value))
+		}
+		return nil
 	}
+	return errors.New("ProcessInputBuffer failed")
 }
 
 /*
@@ -116,11 +134,12 @@ func (s *Server) ProcessCommand(c *Client) {
 		os.Exit(0)
 	}
 	cmd := s.lookupCommand(name) // 查找命令
+	fmt.Println(cmd, name, s)
 	if cmd != nil {
 		c.Cmd = cmd
 		c.call(s) // 执行命令
 	} else {
-		c.doReply(CreateObject(ObjectTypeString, fmt.Sprintf("(error) ERR unknown command '%s'", name)))
+		c.addReplyError(fmt.Sprintf("(error) ERR unknown command '%s'", name))
 	}
 }
 
@@ -136,23 +155,22 @@ func SetCommand(c *Client, s *Server) {
 	objKey := c.Argv[1]
 	objValue := c.Argv[2]
 	if c.Argc != 3 {
-		c.doReply(CreateObject(ObjectTypeString, "(error) ERR wrong number of arguments for 'set' command"))
-		return
+		c.addReplyError("(error) ERR wrong number of arguments for 'set' command")
 	}
 	if stringKey, ok1 := objKey.Ptr.(string); ok1 {
 		if stringValue, ok2 := objValue.Ptr.(string); ok2 {
 			c.Db.Dict[stringKey] = CreateObject(ObjectTypeString, stringValue)
 		}
 	}
-	c.doReply(CreateObject(ObjectTypeString, "OK"))
+	c.addReplyStatus("OK")
 }
 
 func GetCommand(c *Client, s *Server) {
 	key := c.Argv[1].Ptr.(string)
 	obj := c.lookupKey(key) // key查找obj
 	if obj != nil {
-		c.doReply(obj)
+		c.addReplyStatus(obj.Ptr.(string))
 	} else {
-		c.doReply(CreateObject(ObjectTypeString, "nil"))
+		c.addReplyStatus("nil")
 	}
 }

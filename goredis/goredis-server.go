@@ -60,7 +60,11 @@ func handle(conn net.Conn) {
 			log.Println("readQueryFromClient err", err)
 			return
 		}
-		c.ProcessInputBuffer()
+		err = c.ProcessInputBuffer()
+		if err != nil {
+			log.Println("ProcessInputBuffer err", err)
+			return
+		}
 		goredis.ProcessCommand(c)
 		responseConn(conn, c)
 	}
@@ -95,7 +99,6 @@ func initDb() {
 		goredis.Dbs[i] = new(core.GoredisDb)
 		goredis.Dbs[i].Dict = make(map[string]*core.GoredisObject, 100)
 	}
-	fmt.Println("init db begin-->", goredis.Dbs)
 }
 
 // 监听信号处理

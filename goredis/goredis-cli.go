@@ -1,11 +1,13 @@
 package main
 
 import (
+	"GoLearn/goredis/core/proto"
 	"bufio"
 	"fmt"
 	"log"
 	"net"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -24,23 +26,30 @@ func main() {
 	for {
 		fmt.Print(IPPort + "> ")
 		text, _ := reader.ReadString('\n')
-		// text = strings.Replace(text, "\n", "", -1)
+		text = strings.Replace(text, "\n", "", -1)
 		send2Server(text, conn)
 
 		buff := make([]byte, 1024)
 		n, err := conn.Read(buff)
+		resp, err2 := proto.DecodeFromBytes(buff)
 		checkError(err)
 		if n == 0 {
 			fmt.Println(IPPort+"> ", "nil")
+		} else if err2 == nil {
+			fmt.Println(IPPort+"> ", string(resp.Value))
 		} else {
-			fmt.Println(IPPort+">", string(buff))
+			fmt.Println(IPPort+"> ", "err server response")
 		}
 	}
 }
 
 func send2Server(msg string, conn net.Conn) (n int, err error) {
-	data := []byte(msg)
-	n, err = conn.Write(data)
+	p, e := proto.EncodeCmd(msg)
+	if e != nil {
+		return 0, e
+	}
+	// fmt.Println("proto encode", p, string(p))
+	n, err = conn.Write(p)
 	return n, err
 }
 
