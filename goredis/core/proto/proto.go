@@ -70,8 +70,11 @@ func Btoi64(b []byte) (int64, error) {
 	}
 }
 
-/*---- Encoder ----*/
-
+/*
+*
+* Encoder 编码器
+*
+**/
 type Encoder struct {
 	bw *bufio2.Writer
 
@@ -245,7 +248,11 @@ func (e *Encoder) encodeArray(array []*Resp) error {
 	}
 }
 
-/*---- Decoder ----*/
+/*
+*
+* Decoder 解码器
+*
+**/
 type Decoder struct {
 	br *bufio2.Reader
 
@@ -457,7 +464,11 @@ func (d *Decoder) decodeMultiBulk() ([]*Resp, error) {
 	return multi, nil
 }
 
-/*---- Response ----*/
+/*
+*
+* Response
+*
+**/
 type Resp struct {
 	Type byte
 
@@ -501,6 +512,7 @@ func NewArray(array []*Resp) *Resp {
 	r.Array = array
 	return r
 }
+
 func errorsTrace(err error) error {
 	if err != nil {
 		log.Println("errors Tracing", err.Error())

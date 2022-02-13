@@ -10,6 +10,9 @@ import (
 	"os"
 )
 
+//flags 模式
+const CLIENT_PUBSUB = (1 << 18)
+
 /*
 *
 * Client
@@ -23,6 +26,9 @@ type Client struct {
 	QueryBuf string
 	Buf      string
 	FakeFlag bool
+	PubSubChannels *map[string]*List
+	PubSubPatterns *List
+	Flags          int //client flags
 }
 
 func NewClient(conn net.Conn, db *GoredisDb) *Client {
@@ -118,6 +124,8 @@ type Server struct {
 	Commands         map[string]*GoredisCommand // 命令表
 	Dirty            int64
 	AofBuf           []string
+	PubSubChannels   *map[string]*List
+	PubSubPatterns   *List
 }
 
 func NewServer() *Server {
@@ -129,6 +137,9 @@ func (s *Server) CreateClient() (c *Client) {
 	c = new(Client)
 	c.Db = s.Dbs[0]
 	c.QueryBuf = ""
+	tmp := make(map[string]*List, 0)
+	c.PubSubChannels = &tmp
+	c.Flags = 0
 	return c
 }
 

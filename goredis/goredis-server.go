@@ -22,7 +22,6 @@ func main() {
 	/*---- 命令行参数处理 ----*/
 	argv := os.Args
 	argc := len(os.Args)
-	println(argc)
 	if argc >= 2 {
 		if argv[1] == "-v" || argv[1] == "--version" {
 			version()
@@ -59,24 +58,32 @@ func main() {
 func handle(conn net.Conn) {
 	c := goredis.CreateClient()
 	for {
-		err := c.ReadQueryFromClient(conn)
-		if err != nil {
-			log.Println("readQueryFromClient err", err)
-			return
+		if c.Flags&core.CLIENT_PUBSUB > 0 {
+			if c.Buf != "" {
+				responseConn(conn, c)
+				c.Buf = ""
+			}
+			time.Sleep(1)
+		} else {
+			err := c.ReadQueryFromClient(conn)
+			if err != nil {
+				log.Println("ReadQueryFromClient err", err)
+				return
+			}
+			err = c.ProcessInputBuffer()
+			if err != nil {
+				log.Println("ProcessInputBuffer err", err)
+				return
+			}
+			goredis.ProcessCommand(c)
+			responseConn(conn, c)
 		}
-		err = c.ProcessInputBuffer()
-		if err != nil {
-			log.Println("ProcessInputBuffer err", err)
-			return
-		}
-		goredis.ProcessCommand(c)
-		responseConn(conn, c)
 	}
 }
 
 // 响应返回给客户端
 func responseConn(conn net.Conn, c *core.Client) {
-	conn.Write([]byte(c.Buf))
+	_, _ = conn.Write([]byte(c.Buf))
 }
 
 // 初始化服务端实例
@@ -90,11 +97,29 @@ func initServer() {
 
 	getCommand := &core.GoredisCommand{Name: "get", Proc: core.GetCommand}
 	setCommand := &core.GoredisCommand{Name: "set", Proc: core.SetCommand}
+	subscribeCommand := &core.GoredisCommand{Name: "subscribe", Proc: core.SubscribeCommand}
+	publishCommand := &core.GoredisCommand{Name: "publish", Proc: core.PublishCommand}
+	geoaddCommand := &core.GoredisCommand{Name: "geoadd", Proc: core.GeoAddCommand}
+	geohashCommand := &core.GoredisCommand{Name: "geohash", Proc: core.GeoHashCommand}
+	geoposCommand := &core.GoredisCommand{Name: "geopos", Proc: core.GeoPosCommand}
+	geodistCommand := &core.GoredisCommand{Name: "geodist", Proc: core.GeoDistCommand}
+	georadiusCommand := &core.GoredisCommand{Name: "georadius", Proc: core.GeoRadiusCommand}
+	georadiusbymemberCommand := &core.GoredisCommand{Name: "georadiusbymember", Proc: core.GeoRadiusByMemberCommand}
 
 	goredis.Commands = map[string]*core.GoredisCommand{
-		"get": getCommand,
-		"set": setCommand,
+		"get":               getCommand,
+		"set":               setCommand,
+		"geoadd":            geoaddCommand,
+		"geohash":           geohashCommand,
+		"geopos":            geoposCommand,
+		"geodist":           geodistCommand,
+		"georadius":         georadiusCommand,
+		"georadiusbymember": georadiusbymemberCommand,
+		"subscribe":         subscribeCommand,
+		"publish":           publishCommand,
 	}
+	tmp := make(map[string]*core.List)
+	goredis.PubSubChannels = &tmp
 	LoadData()
 }
 
