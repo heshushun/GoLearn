@@ -20,7 +20,7 @@ func GeoAddCommand(c *Client, s *Server) {
 	// check params numbers
 	if (c.Argc-2)%3 != 0 {
 		/* Need an odd number of arguments if we got this far... */
-		c.addReplyError("syntax error. Try GEOADD key [x1] [y1] [name1] "+
+		c.addReplyError("syntax error. Try GEOADD key [x1] [y1] [name1] " +
 			"[x2] [y2] [name2] ... ")
 	}
 
@@ -63,7 +63,7 @@ func GeoAddCommand(c *Client, s *Server) {
 //获取特定位置的hash值
 func GeoHashCommand(c *Client, s *Server) {
 	geoAlphabet := "0123456789bcdefghjkmnpqrstuvwxyz"
-	zobj := c.lookupKey(c.Argv[1].Ptr.(string))
+	zobj := c.lookupObject(c.Argv[1].Ptr.(string))
 	if zobj != nil && zobj.ObjectType != OBJ_ZSET {
 		return
 	}
@@ -71,12 +71,12 @@ func GeoHashCommand(c *Client, s *Server) {
 	for j := 2; j < c.Argc; j++ {
 		var score float64
 		if zobj == nil || zsetScore(zobj, c.Argv[j].Ptr.(string), &score) == C_ERR {
-			c.addReplyError( "score get error ")
+			c.addReplyError("score get error ")
 			return
 		}
 		var xy [2]float64
 		if !decodeGeohash(score, &xy) {
-			c.addReplyError( "hash get error")
+			c.addReplyError("hash get error")
 			continue
 		}
 		r := [2]GeoHashRange{}
@@ -101,7 +101,7 @@ func GeoHashCommand(c *Client, s *Server) {
 
 //获取经纬度
 func GeoPosCommand(c *Client, s *Server) {
-	zobj := c.lookupKey(c.Argv[1].Ptr.(string))
+	zobj := c.lookupObject(c.Argv[1].Ptr.(string))
 	if zobj != nil && zobj.ObjectType != OBJ_ZSET {
 		return
 	}
@@ -110,12 +110,12 @@ func GeoPosCommand(c *Client, s *Server) {
 	for j := 2; j < c.Argc; j++ {
 		var score float64
 		if zobj == nil || zsetScore(zobj, c.Argv[j].Ptr.(string), &score) == C_ERR {
-			c.addReplyError( "score get error ")
+			c.addReplyError("score get error ")
 			return
 		}
 		var xy [2]float64
 		if !decodeGeohash(score, &xy) {
-			c.addReplyError( "hash get error")
+			c.addReplyError("hash get error")
 			continue
 		}
 
@@ -130,10 +130,10 @@ func GeoPosCommand(c *Client, s *Server) {
 //获取两个位置的距离
 func GeoDistCommand(c *Client, s *Server) {
 	if c.Argc >= 5 {
-		c.addReplyError( "params error")
+		c.addReplyError("params error")
 		return
 	}
-	zobj := c.lookupKey(c.Argv[1].Ptr.(string))
+	zobj := c.lookupObject(c.Argv[1].Ptr.(string))
 	if zobj != nil && zobj.ObjectType != OBJ_ZSET {
 		return
 	}
@@ -142,12 +142,12 @@ func GeoDistCommand(c *Client, s *Server) {
 	var xyxy1, xyxy2 [2]float64
 	if zsetScore(zobj, c.Argv[2].Ptr.(string), &score1) == C_ERR ||
 		zsetScore(zobj, c.Argv[3].Ptr.(string), &score2) == C_ERR {
-		c.addReplyError( "score get error ")
+		c.addReplyError("score get error ")
 		return
 	}
 
 	if !decodeGeohash(score1, &xyxy1) || !decodeGeohash(score2, &xyxy2) {
-		c.addReplyError( "hash get error")
+		c.addReplyError("hash get error")
 		return
 	}
 
@@ -169,7 +169,7 @@ func georadiusGeneric(c *Client, flags uint) {
 	storedist := 0 /* 0 for STORE, 1 for STOREDIST. */
 
 	//获取有序集合
-	zobj := c.lookupKey(c.Argv[1].Ptr.(string))
+	zobj := c.lookupObject(c.Argv[1].Ptr.(string))
 	if zobj != nil && zobj.ObjectType != OBJ_ZSET {
 		return
 	}
@@ -181,7 +181,7 @@ func georadiusGeneric(c *Client, flags uint) {
 		arg2, ok1 := c.Argv[2].Ptr.(string)
 		arg3, ok2 := c.Argv[3].Ptr.(string)
 		if !ok1 || !ok2 {
-			c.addReplyError( "get lng lat error")
+			c.addReplyError("get lng lat error")
 			return
 		}
 
@@ -189,14 +189,14 @@ func georadiusGeneric(c *Client, flags uint) {
 		xy[0], err = strconv.ParseFloat(arg2, 64)
 		xy[1], err = strconv.ParseFloat(arg3, 64)
 		if err != nil {
-			c.addReplyError( "get lng lat float error")
+			c.addReplyError("get lng lat float error")
 			return
 		}
 	} else if flags&RADIUS_MEMBER > 0 {
 		//member command
 		base_args = 7
 	} else {
-		c.addReplyError( "Unknown georadius search type")
+		c.addReplyError("Unknown georadius search type")
 		return
 	}
 
@@ -232,7 +232,7 @@ func georadiusGeneric(c *Client, flags uint) {
 			} else if strings.EqualFold(arg, "count") && (i+1) < remaining {
 
 				if count < 0 {
-					c.addReplyError( "COUNT must be > 0")
+					c.addReplyError("COUNT must be > 0")
 					return
 				}
 				i++
@@ -245,7 +245,7 @@ func georadiusGeneric(c *Client, flags uint) {
 				storedist = 1
 				i++
 			} else {
-				c.addReplyError( "params error")
+				c.addReplyError("params error")
 				return
 			}
 		}
@@ -253,7 +253,7 @@ func georadiusGeneric(c *Client, flags uint) {
 
 	if storekey != nil && (withdist > 0 || withhash > 0 || withcoords > 0) {
 		c.addReplyError(
-			"STORE option in GEORADIUS is not compatible with "+
+			"STORE option in GEORADIUS is not compatible with " +
 				"WITHDIST, WITHHASH and WITHCOORDS options")
 		return
 	}
@@ -271,7 +271,7 @@ func georadiusGeneric(c *Client, flags uint) {
 	membersOfAllNeighbors(zobj, georadius, xy[0], xy[1], radius_meters, ga)
 
 	if ga.used == 0 && storekey == nil {
-		c.addReplyError( "emptymultibulk")
+		c.addReplyError("emptymultibulk")
 		return
 	}
 
@@ -336,7 +336,7 @@ func extractUnitOrReply(c *Client, uint GoredisObject) float64 {
 	} else if strings.Compare(u, "mi") == 0 {
 		return 1609.34
 	} else {
-		c.addReplyError( "unsupported unit provided. please use m, km, ft, mi")
+		c.addReplyError("unsupported unit provided. please use m, km, ft, mi")
 		return -1
 	}
 }

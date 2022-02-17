@@ -9,8 +9,8 @@ import (
 	"syscall"
 )
 
-//AppendToFile 写文件
-func AppendToFile(fileName string, content string) error {
+// 写文件
+func AppendToFile(fileName string, content string) {
 	// 以只写的模式，打开文件
 	f, err := os.OpenFile(fileName, os.O_WRONLY|syscall.O_CREAT, 0644)
 	if err != nil {
@@ -20,10 +20,9 @@ func AppendToFile(fileName string, content string) error {
 		_, err = f.WriteAt([]byte(content), n)
 	}
 	defer f.Close()
-	return err
 }
 
-//ReadAof 读文件
+// 读文件
 func ReadAof(fileName string) []string {
 	f, err := os.Open(fileName)
 	if err != nil {

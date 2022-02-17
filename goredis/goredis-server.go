@@ -2,7 +2,6 @@ package main
 
 import (
 	"GoLearn/goredis/core"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -12,24 +11,14 @@ import (
 )
 
 const (
-	DefaultAofFile = "./goredis.aof"
+	DefaultAofFile = "./server.aof"
 )
 
 // 服务端实例
-var goredis = core.NewServer()
+var server = core.NewServer()
 
 func main() {
-	/*---- 命令行参数处理 ----*/
-	argv := os.Args
-	argc := len(os.Args)
-	if argc >= 2 {
-		if argv[1] == "-v" || argv[1] == "--version" {
-			version()
-		}
-		if argv[1] == "--help" || argv[1] == "-h" {
-			usage()
-		}
-	}
+	IPPort := "127.0.0.1:9736"
 
 	/*---- 监听信号 平滑退出 ----*/
 	c := make(chan os.Signal)
@@ -40,7 +29,7 @@ func main() {
 	initServer()
 
 	/*---- 网络处理 ----*/
-	netListen, err := net.Listen("tcp", "127.0.0.1:9736")
+	netListen, err := net.Listen("tcp", IPPort)
 	if err != nil {
 		log.Print("listen err ")
 	}
@@ -56,12 +45,11 @@ func main() {
 
 // 处理请求
 func handle(conn net.Conn) {
-	c := goredis.CreateClient()
+	c := core.NewClient(server.Dbs[0])
 	for {
 		if c.Flags&core.CLIENT_PUBSUB > 0 {
-			if c.Buf != "" {
-				responseConn(conn, c)
-				c.Buf = ""
+			if c.RespBuf != "" {
+				c.ResponseToClient(conn)
 			}
 			time.Sleep(1)
 		} else {
@@ -70,31 +58,39 @@ func handle(conn net.Conn) {
 				log.Println("ReadQueryFromClient err", err)
 				return
 			}
-			err = c.ProcessInputBuffer()
+			err = c.ProcessQueryBuffer()
 			if err != nil {
-				log.Println("ProcessInputBuffer err", err)
+				log.Println("ProcessQueryBuffer err", err)
 				return
 			}
-			goredis.ProcessCommand(c)
-			responseConn(conn, c)
+			server.ProcessCommand(c)
+			c.ResponseToClient(conn)
 		}
 	}
 }
 
-// 响应返回给客户端
-func responseConn(conn net.Conn, c *core.Client) {
-	_, _ = conn.Write([]byte(c.Buf))
-}
-
 // 初始化服务端实例
 func initServer() {
-	goredis.Pid = os.Getpid()
-	goredis.DbNum = 16
-	initDb()
-	goredis.Start = time.Now().UnixNano() / 1000000
-	//var getf server.CmdFun
-	goredis.AofFilename = DefaultAofFile
+	server.Pid = os.Getpid()
+	server.Start = time.Now().UnixNano() / 1000000
+	server.AofFilename = DefaultAofFile
+	server.PubSubChannels = make(map[string]*core.List)
 
+	initDb()
+	initCommand()
+	loadAof()
+}
+
+func initDb() {
+	server.DbNum = 16
+	server.Dbs = make([]*core.GoredisDb, server.DbNum)
+	for i := 0; i < server.DbNum; i++ {
+		server.Dbs[i] = new(core.GoredisDb)
+		server.Dbs[i].Dict = make(map[string]*core.GoredisObject, 100)
+	}
+}
+
+func initCommand() {
 	getCommand := &core.GoredisCommand{Name: "get", Proc: core.GetCommand}
 	setCommand := &core.GoredisCommand{Name: "set", Proc: core.SetCommand}
 	subscribeCommand := &core.GoredisCommand{Name: "subscribe", Proc: core.SubscribeCommand}
@@ -106,7 +102,7 @@ func initServer() {
 	georadiusCommand := &core.GoredisCommand{Name: "georadius", Proc: core.GeoRadiusCommand}
 	georadiusbymemberCommand := &core.GoredisCommand{Name: "georadiusbymember", Proc: core.GeoRadiusByMemberCommand}
 
-	goredis.Commands = map[string]*core.GoredisCommand{
+	server.Commands = map[string]*core.GoredisCommand{
 		"get":               getCommand,
 		"set":               setCommand,
 		"geoadd":            geoaddCommand,
@@ -118,32 +114,19 @@ func initServer() {
 		"subscribe":         subscribeCommand,
 		"publish":           publishCommand,
 	}
-	tmp := make(map[string]*core.List)
-	goredis.PubSubChannels = &tmp
-	LoadData()
 }
 
-// 初始化db
-func initDb() {
-	goredis.Dbs = make([]*core.GoredisDb, goredis.DbNum)
-	for i := 0; i < goredis.DbNum; i++ {
-		goredis.Dbs[i] = new(core.GoredisDb)
-		goredis.Dbs[i].Dict = make(map[string]*core.GoredisObject, 100)
-	}
-}
-
-// 持久化load dada
-func LoadData() {
-	c := goredis.CreateClient()
+func loadAof() {
+	c := core.NewClient(server.Dbs[0])
 	c.FakeFlag = true
-	pros := core.ReadAof(goredis.AofFilename)
+	pros := core.ReadAof(server.AofFilename)
 	for _, v := range pros {
-		c.QueryBuf = string(v)
-		err := c.ProcessInputBuffer()
+		c.QueryBuf = v
+		err := c.ProcessQueryBuffer()
 		if err != nil {
-			log.Println("ProcessInputBuffer err", err)
+			log.Println("ProcessQueryBuffer err", err)
 		}
-		goredis.ProcessCommand(c)
+		server.ProcessCommand(c)
 	}
 }
 
@@ -154,34 +137,13 @@ func sigHandler(c chan os.Signal) {
 		case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
 			exitHandler()
 		default:
-			fmt.Println("signal ", s)
+			println("signal ", s)
 		}
 	}
 }
 
 func exitHandler() {
-	fmt.Println("exiting smoothly ...")
-	fmt.Println("bye ")
-	os.Exit(0)
-}
-
-func version() {
-	println("Goredis server v=0.0.1 sha=xxxxxxx:001 malloc=libc-go bits=64 ")
-	os.Exit(0)
-}
-
-func usage() {
-	println("Usage: ./goredis-server [/path/to/redis.conf] [options]")
-	println("       ./goredis-server - (read config from stdin)")
-	println("       ./goredis-server -v or --version")
-	println("       ./goredis-server -h or --help")
-	println("Examples:")
-	println("       ./goredis-server (run the server with default conf)")
-	println("       ./goredis-server /etc/redis/6379.conf")
-	println("       ./goredis-server --port 7777")
-	println("       ./goredis-server --port 7777 --slaveof 127.0.0.1 8888")
-	println("       ./goredis-server /etc/myredis.conf --loglevel verbose")
-	println("Sentinel mode:")
-	println("       ./goredis-server /etc/sentinel.conf --sentinel")
+	println("exiting success ...")
+	println("bye bye")
 	os.Exit(0)
 }

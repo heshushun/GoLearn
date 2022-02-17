@@ -78,7 +78,7 @@ func zaddGenericCommand(c *Client, flags int) {
 	}
 
 	//这里首先在client对应的db中查找该key，即有序集
-	zobj := c.lookupKey(key.Ptr.(string))
+	zobj := c.lookupObject(key.Ptr.(string))
 	if zobj == nil {
 		//hash+skiplist组合方式,后续再进行判断实现ziplist
 		zobj = createZsetObject()

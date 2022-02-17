@@ -521,5 +521,5 @@ func errorsTrace(err error) error {
 }
 
 func errorNew(msg string) error {
-	return errors.New("error occur, msg ")
+	return errors.New("error occur, msg " + msg)
 }

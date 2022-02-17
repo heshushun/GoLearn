@@ -11,46 +11,60 @@ import (
 )
 
 func main() {
-	IPPort := "127.0.0.1:9736"
+	fmt.Println("Hi Godis")
 
+	IPPort := "127.0.0.1:9736"
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Hi Goredis")
+
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", IPPort)
 	checkError(err)
-
-	//建立连接 如果第二个参数(本地地址)为nil，会自动生成一个本地地址
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	checkError(err)
+
 	defer conn.Close()
+	//log.Println(tcpAddr, conn.LocalAddr(), conn.RemoteAddr())
 
 	for {
 		fmt.Print(IPPort + "> ")
-		text, _ := reader.ReadString('\n')
-		text = strings.Replace(text, "\n", "", -1)
-		send2Server(text, conn)
+		res, _, _ := reader.ReadLine()
+		msg := strings.TrimSpace(string(res))
 
-		buff := make([]byte, 1024)
-		n, err := conn.Read(buff)
-		resp, err2 := proto.DecodeFromBytes(buff)
-		checkError(err)
-		if n == 0 {
+		if len(strings.Fields(msg)) == 0 || helpCmd(strings.Fields(msg)) {
+			continue
+		}
+
+		_, err1 := send2Server(msg, conn)
+
+		n, resp, err2 := replyFromServer(conn)
+
+		if err1 != nil {
+			fmt.Println(IPPort+"> ", "err proto encode")
+		} else if n == 0 {
 			fmt.Println(IPPort+"> ", "nil")
-		} else if err2 == nil {
-			fmt.Println(IPPort+"> ", string(resp.Value))
-		} else {
+		} else if err2 != nil {
 			fmt.Println(IPPort+"> ", "err server response")
+		} else {
+			fmt.Println(IPPort+"> ", string(resp.Value))
 		}
 	}
+
 }
 
 func send2Server(msg string, conn net.Conn) (n int, err error) {
-	p, e := proto.EncodeCmd(msg)
+	encodeMsg, e := proto.EncodeCmd(msg)
 	if e != nil {
 		return 0, e
 	}
-	// fmt.Println("proto encode", p, string(p))
-	n, err = conn.Write(p)
+	//fmt.Println("proto encode", encodeMsg, string(encodeMsg))
+	n, err = conn.Write(encodeMsg)
 	return n, err
+}
+
+func replyFromServer(conn net.Conn) (n int, resp *proto.Resp, err error) {
+	buff := make([]byte, 1024)
+	n, _ = conn.Read(buff)
+	resp, err = proto.DecodeFromBytes(buff)
+	return n, resp, err
 }
 
 func checkError(err error) {
@@ -58,4 +72,28 @@ func checkError(err error) {
 		log.Println("err ", err.Error())
 		os.Exit(1)
 	}
+}
+
+func helpCmd(argv []string) (ret bool) {
+	if argv[0] == "-v" || argv[0] == "--version" {
+		version()
+		ret = true
+	}
+	if argv[0] == "--help" || argv[0] == "-h" {
+		usage()
+		ret = true
+	}
+	return
+}
+
+func version() {
+	fmt.Println("Goredis server v=0.0.1")
+}
+
+func usage() {
+	fmt.Println("Usage: ./goredis-server [/path/to/redis.conf] [options]")
+	fmt.Println("       > get hello")
+	fmt.Println("       > set hello 123")
+	fmt.Println("       > subscribe test")
+	fmt.Println("       > publish test hello")
 }

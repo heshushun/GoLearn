@@ -11,7 +11,7 @@ import (
 )
 
 //flags 模式
-const CLIENT_PUBSUB = (1 << 18)
+const CLIENT_PUBSUB = 1 << 18
 
 /*
 *
@@ -19,35 +19,33 @@ const CLIENT_PUBSUB = (1 << 18)
 *
 **/
 type Client struct {
-	Cmd      *GoredisCommand  // 命令
-	Argv     []*GoredisObject // 输入参数内容
-	Argc     int              // 输入参数个数
-	Db       *GoredisDb
-	QueryBuf string
-	Buf      string
-	FakeFlag bool
-	PubSubChannels *map[string]*List
-	PubSubPatterns *List
-	Flags          int //client flags
+	Cmd            *GoredisCommand  // 命令
+	Argv           []*GoredisObject // 输入参数内容
+	Argc           int              // 输入参数个数
+	Db             *GoredisDb       // 客户端缓存的DB数据
+	QueryBuf       string           // 命令缓存
+	RespBuf        string           // 响应缓存
+	FakeFlag       bool             // 虚标志
+	PubSubChannels map[string]*List // 订阅发布渠道
+	PubSubPatterns *List            //
+	Flags          int              // client flags
 }
 
-func NewClient(conn net.Conn, db *GoredisDb) *Client {
+func NewClient(db *GoredisDb) *Client {
 	c := new(Client)
 	c.Db = db
-	c.Argv = make([]*GoredisObject, 5)
 	c.QueryBuf = ""
+	c.PubSubChannels = make(map[string]*List, 0)
+	c.Flags = 0
 	return c
 }
 
-func (c *Client) lookupKey(key string) *GoredisObject {
+// key获取缓存
+func (c *Client) lookupObject(key string) *GoredisObject {
 	if obj, ok := c.Db.Dict[key]; ok {
 		return obj
 	}
 	return nil
-}
-
-func (c *Client) addReply(obj *GoredisObject) {
-	c.Buf = obj.Ptr.(string)
 }
 
 func (c *Client) addReplyStatus(s string) {
@@ -60,28 +58,19 @@ func (c *Client) addReplyError(s string) {
 	c.addReplyString(r)
 }
 
-func (c *Client) addReplyString( r *proto.Resp) {
+func (c *Client) addReplyString(r *proto.Resp) {
 	if ret, err := proto.EncodeToBytes(r); err == nil {
-		c.Buf = string(ret)
+		c.RespBuf = string(ret)
 	}
 }
 
-func (c *Client) call(s *Server) {
-	dirty := s.Dirty
-	c.Cmd.Proc(c, s)
-	dirty = s.Dirty - dirty
-	if dirty > 0 && !c.FakeFlag {
-		_ = AppendToFile(s.AofFilename, c.QueryBuf)
-	}
-}
-
-// 读取请求信息
+// 读取请求
 func (c *Client) ReadQueryFromClient(conn net.Conn) (err error) {
 	buff := make([]byte, 512)
 	n, err := conn.Read(buff)
 
 	if err != nil {
-		log.Println("conn.Read err!=nil", err, "---len---", n, conn)
+		log.Println("conn.Read err!=nil", err, "len", n, conn)
 		conn.Close()
 		return err
 	}
@@ -89,11 +78,10 @@ func (c *Client) ReadQueryFromClient(conn net.Conn) (err error) {
 	return nil
 }
 
-// 处理请求信息
-func (c *Client) ProcessInputBuffer() error {
+// 转化请求
+func (c *Client) ProcessQueryBuffer() error {
 	//r := regexp.MustCompile("[^\\s]+")
 	decoder := proto.NewDecoder(bytes.NewReader([]byte(c.QueryBuf)))
-	//decoder := proto.NewDecoder(bytes.NewReader([]byte("*2\r\n$3\r\nget\r\n")))
 	if resp, err := decoder.DecodeMultiBulk(); err == nil {
 		c.Argc = len(resp)
 		c.Argv = make([]*GoredisObject, c.Argc)
@@ -102,7 +90,13 @@ func (c *Client) ProcessInputBuffer() error {
 		}
 		return nil
 	}
-	return errors.New("ProcessInputBuffer failed")
+	return errors.New("ProcessQueryBuffer failed")
+}
+
+// 响应请求
+func (c *Client) ResponseToClient(conn net.Conn) {
+	_, _ = conn.Write([]byte(c.RespBuf))
+	c.RespBuf = ""
 }
 
 /*
@@ -111,36 +105,26 @@ func (c *Client) ProcessInputBuffer() error {
 *
 **/
 type Server struct {
-	Dbs              []*GoredisDb
-	DbNum            int
-	Start            int64
-	Port             int32
-	RdbFilename      string
-	AofFilename      string
-	NextClientID     int32
-	SystemMemorySize int32
-	Clients          int32
-	Pid              int
+	Dbs              []*GoredisDb               //
+	DbNum            int                        //
+	Start            int64                      //
+	Port             int32                      //
+	RdbFilename      string                     //
+	AofFilename      string                     // Aof存储文件名
+	NextClientID     int32                      //
+	SystemMemorySize int32                      //
+	Clients          int32                      //
+	Pid              int                        //
 	Commands         map[string]*GoredisCommand // 命令表
-	Dirty            int64
-	AofBuf           []string
-	PubSubChannels   *map[string]*List
-	PubSubPatterns   *List
+	Dirty            int64                      //
+	AofBuf           []string                   //
+	PubSubChannels   map[string]*List           //
+	PubSubPatterns   *List                      //
 }
 
 func NewServer() *Server {
 	s := new(Server)
 	return s
-}
-
-func (s *Server) CreateClient() (c *Client) {
-	c = new(Client)
-	c.Db = s.Dbs[0]
-	c.QueryBuf = ""
-	tmp := make(map[string]*List, 0)
-	c.PubSubChannels = &tmp
-	c.Flags = 0
-	return c
 }
 
 func (s *Server) ProcessCommand(c *Client) {
@@ -150,12 +134,20 @@ func (s *Server) ProcessCommand(c *Client) {
 		os.Exit(0)
 	}
 	cmd := s.lookupCommand(name) // 查找命令
-	fmt.Println(cmd, name, s)
 	if cmd != nil {
 		c.Cmd = cmd
-		c.call(s) // 执行命令
+		s.call(c) // 执行命令
 	} else {
 		c.addReplyError(fmt.Sprintf("(error) ERR unknown command '%s'", name))
+	}
+}
+
+func (s *Server) call(c *Client) {
+	dirty := s.Dirty
+	c.Cmd.Proc(c, s)
+	dirty = s.Dirty - dirty
+	if dirty > 0 && !c.FakeFlag {
+		AppendToFile(s.AofFilename, c.QueryBuf)
 	}
 }
 
@@ -165,29 +157,4 @@ func (s *Server) lookupCommand(name string) *GoredisCommand {
 		return cmd
 	}
 	return nil
-}
-
-func SetCommand(c *Client, s *Server) {
-	objKey := c.Argv[1]
-	objValue := c.Argv[2]
-	if c.Argc != 3 {
-		c.addReplyError("(error) ERR wrong number of arguments for 'set' command")
-	}
-	if stringKey, ok1 := objKey.Ptr.(string); ok1 {
-		if stringValue, ok2 := objValue.Ptr.(string); ok2 {
-			c.Db.Dict[stringKey] = CreateObject(ObjectTypeString, stringValue)
-		}
-	}
-	s.Dirty++
-	c.addReplyStatus("OK")
-}
-
-func GetCommand(c *Client, s *Server) {
-	key := c.Argv[1].Ptr.(string)
-	obj := c.lookupKey(key) // key查找obj
-	if obj != nil {
-		c.addReplyStatus(obj.Ptr.(string))
-	} else {
-		c.addReplyStatus("nil")
-	}
 }
