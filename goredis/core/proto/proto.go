@@ -81,22 +81,18 @@ type Encoder struct {
 	Err error
 }
 
-// NewEncoder
 func NewEncoder(w io.Writer) *Encoder {
 	return NewEncoderBuffer(bufio2.NewWriterSize(w, 8192))
 }
 
-// NewEncoderSize new encoder by size
 func NewEncoderSize(w io.Writer, size int) *Encoder {
 	return NewEncoderBuffer(bufio2.NewWriterSize(w, size))
 }
 
-// NewEncoderBuffer new encoder by bufWriter
 func NewEncoderBuffer(bw *bufio2.Writer) *Encoder {
 	return &Encoder{bw: bw}
 }
 
-// Encode 转换为协议
 func (e *Encoder) Encode(r *Resp, flush bool) error {
 	if e.Err != nil {
 		return errorsTrace(e.Err)
@@ -109,27 +105,6 @@ func (e *Encoder) Encode(r *Resp, flush bool) error {
 	return e.Err
 }
 
-// EncodeCmd 命令行编码协议
-func EncodeCmd(cmd string) ([]byte, error) {
-	return EncodeBytes([]byte(cmd))
-}
-
-// EncodeBytes Bytes编码协议
-func EncodeBytes(b []byte) ([]byte, error) {
-	r := bytes.Split(b, []byte(" "))
-	if r == nil {
-		return nil, errorsTrace(errorNew("empty split"))
-	}
-	resp := NewArray(nil)
-	for _, v := range r {
-		if len(v) > 0 {
-			resp.Array = append(resp.Array, NewBulkBytes(v))
-		}
-	}
-	return EncodeToBytes(resp)
-}
-
-// EncodeMultiBulk encode 多条批量回复
 func (e *Encoder) EncodeMultiBulk(multi []*Resp, flush bool) error {
 	if e.Err != nil {
 		return errorsTrace(e.Err)
@@ -142,7 +117,6 @@ func (e *Encoder) EncodeMultiBulk(multi []*Resp, flush bool) error {
 	return e.Err
 }
 
-// Flush buf to writer
 func (e *Encoder) Flush() error {
 	if e.Err != nil {
 		return errorsTrace(errorNew("Flush error"))
@@ -153,21 +127,6 @@ func (e *Encoder) Flush() error {
 	return e.Err
 }
 
-// Encode 转换为协议接口
-func Encode(w io.Writer, r *Resp) error {
-	return NewEncoder(w).Encode(r, true)
-}
-
-// EncodeToBytes Resp编码协议
-func EncodeToBytes(r *Resp) ([]byte, error) {
-	var b = &bytes.Buffer{}
-	if err := Encode(b, r); err != nil {
-		return nil, err
-	}
-	return b.Bytes(), nil
-}
-
-// encodeResp 编码
 func (e *Encoder) encodeResp(r *Resp) error {
 	if err := e.bw.WriteByte(byte(r.Type)); err != nil {
 		return errorsTrace(err)
@@ -184,7 +143,6 @@ func (e *Encoder) encodeResp(r *Resp) error {
 	}
 }
 
-// encodeMultiBulk encode 多条批量回复
 func (e *Encoder) encodeMultiBulk(multi []*Resp) error {
 	if err := e.bw.WriteByte(byte(TypeArray)); err != nil {
 		return errorsTrace(err)
@@ -192,7 +150,6 @@ func (e *Encoder) encodeMultiBulk(multi []*Resp) error {
 	return e.encodeArray(multi)
 }
 
-// encodeTextBytes encode text type
 func (e *Encoder) encodeTextBytes(b []byte) error {
 	if _, err := e.bw.Write(b); err != nil {
 		return errorsTrace(err)
@@ -203,7 +160,6 @@ func (e *Encoder) encodeTextBytes(b []byte) error {
 	return nil
 }
 
-// encode text type
 func (e *Encoder) encodeTextString(s string) error {
 	if _, err := e.bw.WriteString(s); err != nil {
 		return errorsTrace(err)
@@ -214,12 +170,10 @@ func (e *Encoder) encodeTextString(s string) error {
 	return nil
 }
 
-// encodeInt encode整数
 func (e *Encoder) encodeInt(v int64) error {
 	return e.encodeTextString(strconv.FormatInt(v, 10))
 }
 
-// encodeBulkBytes 批量回复
 func (e *Encoder) encodeBulkBytes(b []byte) error {
 	if b == nil {
 		return e.encodeInt(-1)
@@ -231,7 +185,6 @@ func (e *Encoder) encodeBulkBytes(b []byte) error {
 	}
 }
 
-// encodeArray encode 多条批量回复
 func (e *Encoder) encodeArray(array []*Resp) error {
 	if array == nil {
 		return e.encodeInt(-1)
@@ -248,6 +201,34 @@ func (e *Encoder) encodeArray(array []*Resp) error {
 	}
 }
 
+// api
+func EncodeCmd(cmd string) ([]byte, error) {
+	b := []byte(cmd)
+	r := bytes.Split(b, []byte(" "))
+	if r == nil {
+		return nil, errorsTrace(errorNew("empty split"))
+	}
+	resp := NewArray(nil)
+	for _, v := range r {
+		if len(v) > 0 {
+			resp.Array = append(resp.Array, NewBulkBytes(v))
+		}
+	}
+	return EncodeToBytes(resp)
+}
+
+func Encode(w io.Writer, resp *Resp) error {
+	return NewEncoder(w).Encode(resp, true)
+}
+
+func EncodeToBytes(resp *Resp) ([]byte, error) {
+	var b = &bytes.Buffer{}
+	if err := Encode(b, resp); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
+}
+
 /*
 *
 * Decoder 解码器
@@ -259,22 +240,18 @@ type Decoder struct {
 	Err error
 }
 
-// NewDecoder
 func NewDecoder(r io.Reader) *Decoder {
 	return NewDecoderBuffer(bufio2.NewReaderSize(r, 8192))
 }
 
-// NewDecoderSize by size
 func NewDecoderSize(r io.Reader, size int) *Decoder {
 	return NewDecoderBuffer(bufio2.NewReaderSize(r, size))
 }
 
-// NewDecoderBuffer by bufReader
 func NewDecoderBuffer(br *bufio2.Reader) *Decoder {
 	return &Decoder{br: br}
 }
 
-// Decode
 func (d *Decoder) Decode() (*Resp, error) {
 	if d.Err != nil {
 		return nil, errorsTrace(errorNew("Decode err"))
@@ -286,7 +263,6 @@ func (d *Decoder) Decode() (*Resp, error) {
 	return r, d.Err
 }
 
-// DecodeMultiBulk decode批量回复
 func (d *Decoder) DecodeMultiBulk() ([]*Resp, error) {
 	if d.Err != nil {
 		return nil, errorsTrace(errorNew("DecodeMultibulk error"))
@@ -298,22 +274,6 @@ func (d *Decoder) DecodeMultiBulk() ([]*Resp, error) {
 	return m, err
 }
 
-// Decode api
-func Decode(r io.Reader) (*Resp, error) {
-	return NewDecoder(r).Decode()
-}
-
-// DecodeFromBytes bytes to resp
-func DecodeFromBytes(p []byte) (*Resp, error) {
-	return NewDecoder(bytes.NewReader(p)).Decode()
-}
-
-// DecodeMultiBulkFromBytes format multibulk
-func DecodeMultiBulkFromBytes(p []byte) ([]*Resp, error) {
-	return NewDecoder(bytes.NewReader(p)).DecodeMultiBulk()
-}
-
-// decodeResp 根据返回类型调用不同解析实现
 func (d *Decoder) decodeResp() (*Resp, error) {
 	b, err := d.br.ReadByte()
 	if err != nil {
@@ -334,7 +294,6 @@ func (d *Decoder) decodeResp() (*Resp, error) {
 	return r, err
 }
 
-// decodeTextBytes decode文本
 func (d *Decoder) decodeTextBytes() ([]byte, error) {
 	b, err := d.br.ReadBytes('\n')
 	if err != nil {
@@ -347,7 +306,6 @@ func (d *Decoder) decodeTextBytes() ([]byte, error) {
 	}
 }
 
-// decodeInt decode int
 func (d *Decoder) decodeInt() (int64, error) {
 	b, err := d.br.ReadSlice('\n')
 	if err != nil {
@@ -360,7 +318,6 @@ func (d *Decoder) decodeInt() (int64, error) {
 	}
 }
 
-// decodeBulkBytes decode 批量回复
 func (d *Decoder) decodeBulkBytes() ([]byte, error) {
 	n, err := d.decodeInt()
 	if err != nil {
@@ -384,7 +341,6 @@ func (d *Decoder) decodeBulkBytes() ([]byte, error) {
 	return b[:n], nil
 }
 
-// decodeArray decode 多条批量回复
 func (d *Decoder) decodeArray() ([]*Resp, error) {
 	n, err := d.decodeInt()
 	if err != nil {
@@ -464,6 +420,15 @@ func (d *Decoder) decodeMultiBulk() ([]*Resp, error) {
 	return multi, nil
 }
 
+// api
+func Decode(p []byte) (*Resp, error) {
+	return NewDecoder(bytes.NewReader(p)).Decode()
+}
+
+func DecodeMultiBulk(p []byte) ([]*Resp, error) {
+	return NewDecoder(bytes.NewReader(p)).DecodeMultiBulk()
+}
+
 /*
 *
 * Response
@@ -497,7 +462,7 @@ func NewInt(value []byte) *Resp {
 	return r
 }
 
-// NewBulkBytes 批量回复类型
+// 批量回复类型
 func NewBulkBytes(value []byte) *Resp {
 	r := &Resp{}
 	r.Type = TypeBulkBytes
@@ -505,7 +470,7 @@ func NewBulkBytes(value []byte) *Resp {
 	return r
 }
 
-// NewArray 多条批量回复类型
+// 多条批量回复类型
 func NewArray(array []*Resp) *Resp {
 	r := &Resp{}
 	r.Type = TypeArray

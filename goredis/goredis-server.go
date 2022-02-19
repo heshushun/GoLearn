@@ -95,22 +95,10 @@ func initCommand() {
 	setCommand := &core.GoredisCommand{Name: "set", Proc: core.SetCommand}
 	subscribeCommand := &core.GoredisCommand{Name: "subscribe", Proc: core.SubscribeCommand}
 	publishCommand := &core.GoredisCommand{Name: "publish", Proc: core.PublishCommand}
-	geoaddCommand := &core.GoredisCommand{Name: "geoadd", Proc: core.GeoAddCommand}
-	geohashCommand := &core.GoredisCommand{Name: "geohash", Proc: core.GeoHashCommand}
-	geoposCommand := &core.GoredisCommand{Name: "geopos", Proc: core.GeoPosCommand}
-	geodistCommand := &core.GoredisCommand{Name: "geodist", Proc: core.GeoDistCommand}
-	georadiusCommand := &core.GoredisCommand{Name: "georadius", Proc: core.GeoRadiusCommand}
-	georadiusbymemberCommand := &core.GoredisCommand{Name: "georadiusbymember", Proc: core.GeoRadiusByMemberCommand}
 
 	server.Commands = map[string]*core.GoredisCommand{
 		"get":               getCommand,
 		"set":               setCommand,
-		"geoadd":            geoaddCommand,
-		"geohash":           geohashCommand,
-		"geopos":            geoposCommand,
-		"geodist":           geodistCommand,
-		"georadius":         georadiusCommand,
-		"georadiusbymember": georadiusbymemberCommand,
 		"subscribe":         subscribeCommand,
 		"publish":           publishCommand,
 	}

@@ -63,7 +63,7 @@ func send2Server(msg string, conn net.Conn) (n int, err error) {
 func replyFromServer(conn net.Conn) (n int, resp *proto.Resp, err error) {
 	buff := make([]byte, 1024)
 	n, _ = conn.Read(buff)
-	resp, err = proto.DecodeFromBytes(buff)
+	resp, err = proto.Decode(buff)
 	return n, resp, err
 }
 

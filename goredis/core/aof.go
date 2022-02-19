@@ -10,7 +10,7 @@ import (
 )
 
 // 写文件
-func AppendToFile(fileName string, content string) {
+func WriteAof(fileName string, content string) {
 	// 以只写的模式，打开文件
 	f, err := os.OpenFile(fileName, os.O_WRONLY|syscall.O_CREAT, 0644)
 	if err != nil {

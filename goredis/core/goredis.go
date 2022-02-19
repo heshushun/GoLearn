@@ -2,7 +2,6 @@ package core
 
 import (
 	"GoLearn/goredis/core/proto"
-	"bytes"
 	"errors"
 	"fmt"
 	"log"
@@ -38,6 +37,10 @@ func NewClient(db *GoredisDb) *Client {
 	c.PubSubChannels = make(map[string]*List, 0)
 	c.Flags = 0
 	return c
+}
+
+func (c *Client) call(s *Server) {
+	c.Cmd.Proc(c, s)
 }
 
 // key获取缓存
@@ -81,8 +84,7 @@ func (c *Client) ReadQueryFromClient(conn net.Conn) (err error) {
 // 转化请求
 func (c *Client) ProcessQueryBuffer() error {
 	//r := regexp.MustCompile("[^\\s]+")
-	decoder := proto.NewDecoder(bytes.NewReader([]byte(c.QueryBuf)))
-	if resp, err := decoder.DecodeMultiBulk(); err == nil {
+	if resp, err := proto.DecodeMultiBulk([]byte(c.QueryBuf)); err == nil {
 		c.Argc = len(resp)
 		c.Argv = make([]*GoredisObject, c.Argc)
 		for k, s := range resp {
@@ -136,18 +138,18 @@ func (s *Server) ProcessCommand(c *Client) {
 	cmd := s.lookupCommand(name) // 查找命令
 	if cmd != nil {
 		c.Cmd = cmd
-		s.call(c) // 执行命令
+		s.doCommand(c) // 执行命令
 	} else {
 		c.addReplyError(fmt.Sprintf("(error) ERR unknown command '%s'", name))
 	}
 }
 
-func (s *Server) call(c *Client) {
+func (s *Server) doCommand(c *Client) {
 	dirty := s.Dirty
-	c.Cmd.Proc(c, s)
+	c.call(s)
 	dirty = s.Dirty - dirty
 	if dirty > 0 && !c.FakeFlag {
-		AppendToFile(s.AofFilename, c.QueryBuf)
+		WriteAof(s.AofFilename, c.QueryBuf)
 	}
 }
 

@@ -6,6 +6,11 @@ import (
 "io"
 )
 
+/*
+*
+* Reader
+*
+**/
 type Reader struct {
 	err error
 	buf []byte
@@ -15,9 +20,6 @@ type Reader struct {
 	wpos int
 
 	slice sliceAlloc
-}
-type sliceAlloc struct {
-	buf []byte
 }
 
 func NewReader(rd io.Reader) *Reader {
@@ -54,6 +56,7 @@ func (b *Reader) fill() error {
 func (b *Reader) buffered() int {
 	return b.wpos - b.rpos
 }
+
 func (b *Reader) ReadByte() (byte, error) {
 	if b.err != nil {
 		return 0, b.err
@@ -94,6 +97,7 @@ func (b *Reader) ReadBytes(delim byte) ([]byte, error) {
 	copy(buf[n:], last)
 	return buf, nil
 }
+
 func (b *Reader) ReadSlice(delim byte) ([]byte, error) {
 	if b.err != nil {
 		return nil, b.err
@@ -129,6 +133,24 @@ func (b *Reader) ReadFull(n int) ([]byte, error) {
 	return buf, nil
 }
 
+func (b *Reader) PeekByte() (byte, error) {
+	if b.err != nil {
+		return 0, b.err
+	}
+	if b.buffered() == 0 {
+		if b.fill() != nil {
+			return 0, b.err
+		}
+	}
+	c := b.buf[b.rpos]
+	return c, nil
+}
+
+/*
+*
+* Writer
+*
+**/
 type Writer struct {
 	err error
 	buf []byte
@@ -148,22 +170,6 @@ func NewWriterSize(wr io.Writer, size int) *Writer {
 	return &Writer{wr: wr, buf: make([]byte, size)}
 }
 
-func (d *sliceAlloc) Make(n int) (ss []byte) {
-	switch {
-	case n == 0:
-		return []byte{}
-	case n >= 512:
-		return make([]byte, n)
-	default:
-		if len(d.buf) < n {
-			d.buf = make([]byte, 8192)
-		}
-		ss, d.buf = d.buf[:n:n], d.buf[n:]
-		return ss
-	}
-}
-
-//Flush api
 func (b *Writer) Flush() error {
 	return b.flush()
 }
@@ -189,6 +195,7 @@ func (b *Writer) flush() error {
 func (b *Writer) available() int {
 	return len(b.buf) - b.wpos
 }
+
 func (b *Writer) Write(p []byte) (nn int, err error) {
 	for b.err == nil && len(p) > b.available() {
 		var n int
@@ -209,7 +216,6 @@ func (b *Writer) Write(p []byte) (nn int, err error) {
 	return nn + n, nil
 }
 
-// WriteByte write byte
 func (b *Writer) WriteByte(c byte) error {
 	if b.err != nil {
 		return b.err
@@ -222,7 +228,6 @@ func (b *Writer) WriteByte(c byte) error {
 	return nil
 }
 
-// WriteString write buf
 func (b *Writer) WriteString(s string) (nn int, err error) {
 	for b.err == nil && len(s) > b.available() {
 		n := copy(b.buf[b.wpos:], s)
@@ -237,15 +242,27 @@ func (b *Writer) WriteString(s string) (nn int, err error) {
 	b.wpos += n
 	return nn + n, nil
 }
-func (b *Reader) PeekByte() (byte, error) {
-	if b.err != nil {
-		return 0, b.err
-	}
-	if b.buffered() == 0 {
-		if b.fill() != nil {
-			return 0, b.err
+
+/*
+*
+* sliceAlloc
+*
+**/
+type sliceAlloc struct {
+	buf []byte
+}
+
+func (d *sliceAlloc) Make(n int) (ss []byte) {
+	switch {
+	case n == 0:
+		return []byte{}
+	case n >= 512:
+		return make([]byte, n)
+	default:
+		if len(d.buf) < n {
+			d.buf = make([]byte, 8192)
 		}
+		ss, d.buf = d.buf[:n:n], d.buf[n:]
+		return ss
 	}
-	c := b.buf[b.rpos]
-	return c, nil
 }
