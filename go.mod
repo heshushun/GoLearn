@@ -11,6 +11,7 @@ require (
 	github.com/micro/go-micro/v2 v2.9.1
 	github.com/micro/go-plugins/wrapper/trace/opentracing/v2 v2.9.1
 	github.com/opentracing/opentracing-go v1.2.0
+	github.com/oschwald/geoip2-golang v1.6.1
 	github.com/silenceper/log v0.0.0-20171204144354-e5ac7fa8a76a
 	github.com/uber/jaeger-client-go v2.29.1+incompatible
 	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb
@@ -63,6 +64,7 @@ require (
 	github.com/nats-io/nats.go v1.9.2 // indirect
 	github.com/nats-io/nkeys v0.1.4 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
+	github.com/oschwald/maxminddb-golang v1.8.0 // indirect
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -76,7 +78,6 @@ require (
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
 	github.com/xanzy/ssh-agent v0.2.1 // indirect
-	github.com/yanyiwu/gojieba v1.1.2 // indirect
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect

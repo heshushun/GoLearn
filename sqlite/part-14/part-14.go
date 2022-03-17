@@ -80,9 +80,9 @@ const (
 	INTERNAL_NODE_CHILD_SIZE        = 4
 	INTERNAL_NODE_CELL_SIZE         = INTERNAL_NODE_CHILD_SIZE + INTERNAL_NODE_KEY_SIZE
 	INTERNAL_NODE_SPACE_FOR_CELLS   = PAGE_SIZE - INTERNAL_NODE_HEADER_SIZE
-	INTERNAL_NODE_MAX_CELLS         = INTERNAL_NODE_SPACE_FOR_CELLS / INTERNAL_NODE_CELL_SIZE
+	INTERNAL_NODE_MAX_CELLS         = 3
 	INTERNAL_NODE_RIGHT_SPLIT_COUNT = (INTERNAL_NODE_MAX_CELLS + 1) / 2
-	INTERNAL_NODE_LEFT_SPLIT_COUNT  = (INTERNAL_NODE_MAX_CELLS + 1) - LEAF_NODE_RIGHT_SPLIT_COUNT
+	INTERNAL_NODE_LEFT_SPLIT_COUNT  = (INTERNAL_NODE_MAX_CELLS + 1) - INTERNAL_NODE_RIGHT_SPLIT_COUNT
 )
 
 /*
@@ -1208,6 +1208,18 @@ func main() {
 
 	fileName := "mydb.txt"
 	table := dbOpen(fileName)
+
+	//data, _ := ioutil.ReadFile("input.txt")
+	//lines := strings.Split(string(data), "\n")
+	//for i, line := range lines {
+	//	input := strings.TrimSpace(line)
+	//	fmt.Printf("%d: %s\n", i+1, input)
+	//
+	//	inputBuffer := NewInputBuffer()
+	//	inputBuffer.buffer = input
+	//	inputBuffer.bufferLength = len(inputBuffer.buffer)
+	//	inputBuffer.inputLength = len(inputBuffer.buffer)
+
 	for {
 		inputBuffer := NewInputBuffer()
 		inputBuffer.printPrompt()
