@@ -1,11 +1,11 @@
 package database
 
 import (
-	HashSet "github.com/hdt3213/godis/datastruct/set"
-	"github.com/hdt3213/godis/interface/database"
-	"github.com/hdt3213/godis/interface/redis"
-	"github.com/hdt3213/godis/lib/utils"
-	"github.com/hdt3213/godis/redis/reply"
+	HashSet "godis/datastruct/set"
+	"godis/interface/database"
+	"godis/interface/redis"
+	"godis/lib/utils"
+	"godis/redis/reply"
 	"strconv"
 )
 

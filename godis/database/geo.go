@@ -2,11 +2,11 @@ package database
 
 import (
 	"fmt"
-	"github.com/hdt3213/godis/datastruct/sortedset"
-	"github.com/hdt3213/godis/interface/redis"
-	"github.com/hdt3213/godis/lib/geohash"
-	"github.com/hdt3213/godis/lib/utils"
-	"github.com/hdt3213/godis/redis/reply"
+	"godis/datastruct/sortedset"
+	"godis/interface/redis"
+	"godis/lib/geohash"
+	"godis/lib/utils"
+	"godis/redis/reply"
 	"strconv"
 	"strings"
 )

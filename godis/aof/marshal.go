@@ -1,12 +1,12 @@
 package aof
 
 import (
-	"github.com/hdt3213/godis/datastruct/dict"
-	List "github.com/hdt3213/godis/datastruct/list"
-	"github.com/hdt3213/godis/datastruct/set"
-	SortedSet "github.com/hdt3213/godis/datastruct/sortedset"
-	"github.com/hdt3213/godis/interface/database"
-	"github.com/hdt3213/godis/redis/reply"
+	"godis/datastruct/dict"
+	List "godis/datastruct/list"
+	"godis/datastruct/set"
+	SortedSet "godis/datastruct/sortedset"
+	"godis/interface/database"
+	"godis/redis/reply"
 	"strconv"
 	"time"
 )

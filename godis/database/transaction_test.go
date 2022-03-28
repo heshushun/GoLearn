@@ -1,9 +1,9 @@
 package database
 
 import (
-	"github.com/hdt3213/godis/lib/utils"
-	"github.com/hdt3213/godis/redis/connection"
-	"github.com/hdt3213/godis/redis/reply/asserts"
+	"godis/lib/utils"
+	"godis/redis/connection"
+	"godis/redis/reply/asserts"
 	"testing"
 )
 

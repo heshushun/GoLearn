@@ -1,9 +1,9 @@
 package pubsub
 
 import (
-	"github.com/hdt3213/godis/datastruct/list"
-	"github.com/hdt3213/godis/interface/redis"
-	"github.com/hdt3213/godis/redis/reply"
+	"godis/datastruct/list"
+	"godis/interface/redis"
+	"godis/redis/reply"
 	"strconv"
 )
 

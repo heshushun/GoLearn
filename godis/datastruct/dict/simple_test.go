@@ -1,7 +1,7 @@
 package dict
 
 import (
-	"github.com/hdt3213/godis/lib/utils"
+	"godis/lib/utils"
 	"testing"
 )
 

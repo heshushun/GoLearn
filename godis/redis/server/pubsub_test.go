@@ -1,11 +1,11 @@
 package server
 
 import (
-	"github.com/hdt3213/godis/lib/utils"
-	"github.com/hdt3213/godis/pubsub"
-	"github.com/hdt3213/godis/redis/connection"
-	"github.com/hdt3213/godis/redis/parser"
-	"github.com/hdt3213/godis/redis/reply/asserts"
+	"godis/lib/utils"
+	"godis/pubsub"
+	"godis/redis/connection"
+	"godis/redis/parser"
+	"godis/redis/reply/asserts"
 	"testing"
 )
 

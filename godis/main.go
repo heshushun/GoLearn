@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/hdt3213/godis/config"
-	"github.com/hdt3213/godis/lib/logger"
-	RedisServer "github.com/hdt3213/godis/redis/server"
-	"github.com/hdt3213/godis/tcp"
+	"godis/config"
+	"godis/lib/logger"
+	RedisServer "godis/redis/server"
+	"godis/tcp"
 	"os"
 )
 

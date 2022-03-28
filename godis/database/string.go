@@ -1,12 +1,12 @@
 package database
 
 import (
-	"github.com/hdt3213/godis/aof"
-	"github.com/hdt3213/godis/interface/database"
-	"github.com/hdt3213/godis/interface/redis"
-	"github.com/hdt3213/godis/lib/utils"
-	"github.com/hdt3213/godis/redis/reply"
 	"github.com/shopspring/decimal"
+	"godis/aof"
+	"godis/interface/database"
+	"godis/interface/redis"
+	"godis/lib/utils"
+	"godis/redis/reply"
 	"strconv"
 	"strings"
 	"time"

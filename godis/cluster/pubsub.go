@@ -1,9 +1,9 @@
 package cluster
 
 import (
-	"github.com/hdt3213/godis/interface/redis"
-	"github.com/hdt3213/godis/lib/logger"
-	"github.com/hdt3213/godis/redis/reply"
+	"godis/interface/redis"
+	"godis/lib/logger"
+	"godis/redis/reply"
 )
 
 const (

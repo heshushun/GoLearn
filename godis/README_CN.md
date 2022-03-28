@@ -3,7 +3,7 @@
 ![license](https://img.shields.io/github/license/HDT3213/godis)
 [![Build Status](https://travis-ci.com/HDT3213/godis.svg?branch=master)](https://travis-ci.com/HDT3213/godis)
 [![Coverage Status](https://coveralls.io/repos/github/HDT3213/godis/badge.svg?branch=master)](https://coveralls.io/github/HDT3213/godis?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/HDT3213/godis)](https://goreportcard.com/report/github.com/HDT3213/godis)
+[![Go Report Card](https://goreportcard.com/badge/godis)](https://goreportcard.com/report/godis)
 <br>
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge-flat.svg)](https://github.com/avelino/awesome-go)
 
@@ -66,7 +66,7 @@ redis-cli -p 6399
 
 ## 支持的命令
 
-请参考 [commands.md](https://github.com/HDT3213/godis/blob/master/commands.md)
+请参考 [commands.md](https://godis/blob/master/commands.md)
 
 ## 性能测试
 

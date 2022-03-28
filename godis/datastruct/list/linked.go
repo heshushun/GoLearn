@@ -1,6 +1,6 @@
 package list
 
-import "github.com/hdt3213/godis/lib/utils"
+import "godis/lib/utils"
 
 // LinkedList is doubly linked list
 type LinkedList struct {

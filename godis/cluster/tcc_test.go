@@ -1,8 +1,8 @@
 package cluster
 
 import (
-	"github.com/hdt3213/godis/redis/connection"
-	"github.com/hdt3213/godis/redis/reply/asserts"
+	"godis/redis/connection"
+	"godis/redis/reply/asserts"
 	"math/rand"
 	"strconv"
 	"testing"

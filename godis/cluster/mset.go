@@ -2,8 +2,8 @@ package cluster
 
 import (
 	"fmt"
-	"github.com/hdt3213/godis/interface/redis"
-	"github.com/hdt3213/godis/redis/reply"
+	"godis/interface/redis"
+	"godis/redis/reply"
 	"strconv"
 )
 

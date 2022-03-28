@@ -2,9 +2,9 @@ package database
 
 import (
 	"fmt"
-	"github.com/hdt3213/godis/lib/utils"
-	"github.com/hdt3213/godis/redis/reply"
-	"github.com/hdt3213/godis/redis/reply/asserts"
+	"godis/lib/utils"
+	"godis/redis/reply"
+	"godis/redis/reply/asserts"
 	"strconv"
 	"testing"
 )

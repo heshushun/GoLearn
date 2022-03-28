@@ -1,7 +1,7 @@
 package cluster
 
 import (
-	"github.com/hdt3213/godis/config"
+	"godis/config"
 	"math/rand"
 )
 

@@ -2,7 +2,7 @@ package timewheel
 
 import (
 	"container/list"
-	"github.com/hdt3213/godis/lib/logger"
+	"godis/lib/logger"
 	"time"
 )
 

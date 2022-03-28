@@ -3,10 +3,10 @@ package cluster
 import (
 	"context"
 	"errors"
-	"github.com/hdt3213/godis/config"
-	"github.com/hdt3213/godis/lib/utils"
-	"github.com/hdt3213/godis/redis/client"
 	"github.com/jolestar/go-commons-pool/v2"
+	"godis/config"
+	"godis/lib/utils"
+	"godis/redis/client"
 )
 
 type connectionFactory struct {

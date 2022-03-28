@@ -2,7 +2,7 @@ package connection
 
 import (
 	"bytes"
-	"github.com/hdt3213/godis/lib/sync/wait"
+	"godis/lib/sync/wait"
 	"net"
 	"sync"
 	"time"

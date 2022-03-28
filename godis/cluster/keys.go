@@ -1,8 +1,8 @@
 package cluster
 
 import (
-	"github.com/hdt3213/godis/interface/redis"
-	"github.com/hdt3213/godis/redis/reply"
+	"godis/interface/redis"
+	"godis/redis/reply"
 )
 
 // FlushDB removes all data in current database

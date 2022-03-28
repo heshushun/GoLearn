@@ -1,15 +1,15 @@
 package database
 
 import (
-	"github.com/hdt3213/godis/aof"
-	"github.com/hdt3213/godis/datastruct/dict"
-	"github.com/hdt3213/godis/datastruct/list"
-	"github.com/hdt3213/godis/datastruct/set"
-	"github.com/hdt3213/godis/datastruct/sortedset"
-	"github.com/hdt3213/godis/interface/redis"
-	"github.com/hdt3213/godis/lib/utils"
-	"github.com/hdt3213/godis/lib/wildcard"
-	"github.com/hdt3213/godis/redis/reply"
+	"godis/aof"
+	"godis/datastruct/dict"
+	"godis/datastruct/list"
+	"godis/datastruct/set"
+	"godis/datastruct/sortedset"
+	"godis/interface/redis"
+	"godis/lib/utils"
+	"godis/lib/wildcard"
+	"godis/redis/reply"
 	"strconv"
 	"time"
 )

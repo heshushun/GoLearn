@@ -1,9 +1,9 @@
 package database
 
 import (
-	"github.com/hdt3213/godis/datastruct/set"
-	"github.com/hdt3213/godis/interface/redis"
-	"github.com/hdt3213/godis/redis/reply"
+	"godis/datastruct/set"
+	"godis/interface/redis"
+	"godis/redis/reply"
 	"strings"
 )
 

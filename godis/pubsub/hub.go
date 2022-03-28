@@ -1,8 +1,8 @@
 package pubsub
 
 import (
-	"github.com/hdt3213/godis/datastruct/dict"
-	"github.com/hdt3213/godis/datastruct/lock"
+	"godis/datastruct/dict"
+	"godis/datastruct/lock"
 )
 
 // Hub stores all subscribe relations

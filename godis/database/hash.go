@@ -1,12 +1,12 @@
 package database
 
 import (
-	Dict "github.com/hdt3213/godis/datastruct/dict"
-	"github.com/hdt3213/godis/interface/database"
-	"github.com/hdt3213/godis/interface/redis"
-	"github.com/hdt3213/godis/lib/utils"
-	"github.com/hdt3213/godis/redis/reply"
 	"github.com/shopspring/decimal"
+	Dict "godis/datastruct/dict"
+	"godis/interface/database"
+	"godis/interface/redis"
+	"godis/lib/utils"
+	"godis/redis/reply"
 	"strconv"
 )
 

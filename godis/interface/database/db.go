@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/hdt3213/godis/interface/redis"
+	"godis/interface/redis"
 	"time"
 )
 

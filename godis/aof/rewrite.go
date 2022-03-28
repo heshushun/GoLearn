@@ -1,11 +1,11 @@
 package aof
 
 import (
-	"github.com/hdt3213/godis/config"
-	"github.com/hdt3213/godis/interface/database"
-	"github.com/hdt3213/godis/lib/logger"
-	"github.com/hdt3213/godis/lib/utils"
-	"github.com/hdt3213/godis/redis/reply"
+	"godis/config"
+	"godis/interface/database"
+	"godis/lib/logger"
+	"godis/lib/utils"
+	"godis/redis/reply"
 	"io"
 	"io/ioutil"
 	"os"

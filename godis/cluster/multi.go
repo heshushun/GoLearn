@@ -1,10 +1,10 @@
 package cluster
 
 import (
-	"github.com/hdt3213/godis/database"
-	"github.com/hdt3213/godis/interface/redis"
-	"github.com/hdt3213/godis/lib/utils"
-	"github.com/hdt3213/godis/redis/reply"
+	"godis/database"
+	"godis/interface/redis"
+	"godis/lib/utils"
+	"godis/redis/reply"
 	"strconv"
 )
 

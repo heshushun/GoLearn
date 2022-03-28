@@ -3,8 +3,8 @@ package cluster
 import (
 	"bytes"
 	"encoding/base64"
-	"github.com/hdt3213/godis/redis/parser"
-	"github.com/hdt3213/godis/redis/reply"
+	"godis/redis/parser"
+	"godis/redis/reply"
 )
 
 func encodeCmdLine(cmdLines []CmdLine) [][]byte {

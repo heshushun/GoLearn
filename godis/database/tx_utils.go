@@ -1,8 +1,8 @@
 package database
 
 import (
-	"github.com/hdt3213/godis/aof"
-	"github.com/hdt3213/godis/lib/utils"
+	"godis/aof"
+	"godis/lib/utils"
 	"strconv"
 )
 

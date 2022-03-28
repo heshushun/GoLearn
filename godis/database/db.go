@@ -2,13 +2,13 @@
 package database
 
 import (
-	"github.com/hdt3213/godis/datastruct/dict"
-	"github.com/hdt3213/godis/datastruct/lock"
-	"github.com/hdt3213/godis/interface/database"
-	"github.com/hdt3213/godis/interface/redis"
-	"github.com/hdt3213/godis/lib/logger"
-	"github.com/hdt3213/godis/lib/timewheel"
-	"github.com/hdt3213/godis/redis/reply"
+	"godis/datastruct/dict"
+	"godis/datastruct/lock"
+	"godis/interface/database"
+	"godis/interface/redis"
+	"godis/lib/logger"
+	"godis/lib/timewheel"
+	"godis/redis/reply"
 	"strings"
 	"sync"
 	"time"

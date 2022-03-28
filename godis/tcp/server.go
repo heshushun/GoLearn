@@ -7,8 +7,8 @@ package tcp
 import (
 	"context"
 	"fmt"
-	"github.com/hdt3213/godis/interface/tcp"
-	"github.com/hdt3213/godis/lib/logger"
+	"godis/interface/tcp"
+	"godis/lib/logger"
 	"net"
 	"os"
 	"os/signal"
